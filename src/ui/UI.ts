@@ -26,6 +26,9 @@ export class UI {
   private toolButtons = new Map<string, HTMLButtonElement>();
   private optionsMenu!: HTMLElement;
   private optionsBtn!: HTMLButtonElement;
+  private btnOptLang!: HTMLButtonElement;
+  private btnOptMusic!: HTMLButtonElement;
+  private btnOptAudio!: HTMLButtonElement;
   private elLevel!: HTMLElement;
   private btnDir!: HTMLButtonElement;
   private elStatus!: HTMLElement;
@@ -303,7 +306,8 @@ export class UI {
   private buildOptionsMenu(): void {
     this.optionsMenu.innerHTML = "";
 
-    const createMenuBtn = (text: StringKey, onClick: () => void) => {
+    // Entrée statique : libellé traduit fixe, fermée au clic.
+    const staticBtn = (text: StringKey, onClick: () => void) => {
       const item = document.createElement("button");
       item.className = "menu-item";
       this.reg({ el: item, text });
@@ -314,25 +318,37 @@ export class UI {
       return item;
     };
 
-    this.optionsMenu.appendChild(createMenuBtn("optionsHelp", () => {
-      this.showHelp();
-    }));
+    // Entrée à état : le libellé (rafraîchi par refreshOptionsLabels) affiche
+    // la valeur courante. On reste dans le menu pour enchaîner les réglages.
+    const stateBtn = (onClick: () => void) => {
+      const item = document.createElement("button");
+      item.className = "menu-item";
+      item.addEventListener("click", () => {
+        onClick();
+        this.refreshOptionsLabels();
+      });
+      return item;
+    };
 
-    this.optionsMenu.appendChild(createMenuBtn("optionsDebug", () => {
-      this.debugPanel.classList.toggle("hidden");
-    }));
+    this.optionsMenu.appendChild(staticBtn("optionsHelp", () => this.showHelp()));
+    this.optionsMenu.appendChild(
+      staticBtn("optionsDebug", () => this.debugPanel.classList.toggle("hidden")),
+    );
 
-    this.optionsMenu.appendChild(createMenuBtn("optionsLanguage", () => {
-      this.game.toggleLang();
-    }));
+    this.btnOptLang = stateBtn(() => this.game.toggleLang());
+    this.btnOptMusic = stateBtn(() => this.game.toggleMusic());
+    this.btnOptAudio = stateBtn(() => this.game.toggleSfx());
+    this.optionsMenu.append(this.btnOptLang, this.btnOptMusic, this.btnOptAudio);
 
-    this.optionsMenu.appendChild(createMenuBtn("optionsMusic", () => {
-      this.game.toggleMusic();
-    }));
+    this.refreshOptionsLabels();
+  }
 
-    this.optionsMenu.appendChild(createMenuBtn("optionsAudio", () => {
-      this.game.toggleSfx();
-    }));
+  // Met à jour les libellés des entrées à état (langue / musique / effets).
+  private refreshOptionsLabels(): void {
+    const onOff = (b: boolean) => t(b ? "optionsOn" : "optionsOff");
+    this.btnOptLang.textContent = t("optionsLanguage", { v: getLang().toUpperCase() });
+    this.btnOptMusic.textContent = t("optionsMusic", { v: onOff(this.game.audio.isMusicEnabled()) });
+    this.btnOptAudio.textContent = t("optionsAudio", { v: onOff(this.game.audio.isSfxEnabled()) });
   }
 
   private toggleOptionsMenu(): void {
@@ -368,6 +384,7 @@ export class UI {
     }
     this.btnLang.textContent = getLang() === "fr" ? "EN" : "FR";
     document.documentElement.lang = getLang();
+    this.refreshOptionsLabels();
     this.refreshTools();
   }
 
