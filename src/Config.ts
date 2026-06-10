@@ -57,6 +57,7 @@ export const Config = {
   RIVER_BRIDGE_LEVEL: 1, // niveau minimum d'une route au-dessus de l'eau (pont)
   RIVER_MAX_OFFSET: 2, // écart max (cases) du lit par rapport au centre de la carte
   RIVER_WANDER: 0.45, // probabilité que le lit fasse un coude à chaque rangée
+  WATER_ANIM_FPS: 5, // images d'animation par seconde pour les reflets d'eau
 
   // --- Arbres ---
   TREE_DENSITY: 0.07, // probabilité d'arbre par case d'herbe à la génération

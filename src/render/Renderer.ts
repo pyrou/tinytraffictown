@@ -127,6 +127,7 @@ export class Renderer {
 
     const drawables: Drawable[] = [];
     const size = sim.grid.size;
+    const waterFrame = Math.floor((performance.now() / 1000) * Config.WATER_ANIM_FPS);
 
     for (let x = 0; x < size; x++) {
       for (let y = 0; y < size; y++) {
@@ -139,7 +140,7 @@ export class Renderer {
         const cell = sim.grid.cell(x, y);
         drawables.push({
           key: base - 1,
-          draw: () => this.drawGround(cx, cy, x, y, cell.river),
+          draw: () => this.drawGround(cx, cy, x, y, cell.river, waterFrame),
         });
         for (const p of cell.pieces) {
           drawables.push({
@@ -180,11 +181,19 @@ export class Renderer {
 
   // ---- sol ----
 
-  private drawGround(cx: number, cy: number, gx: number, gy: number, water: boolean): void {
+  private drawGround(
+    cx: number,
+    cy: number,
+    gx: number,
+    gy: number,
+    water: boolean,
+    waterFrame: number,
+  ): void {
     const g = this.ctx;
     const h = (gx * 7349 + gy * 4271 + 131) % 97;
     if (water) {
       const blues = ["#3a6da3", "#3f74ab", "#35659a"];
+      const wave = (waterFrame + h) % 6;
       g.fillStyle = blues[h % 3];
       this.diamondPath(cx, cy, 0, [0, 0, 0, 0]);
       g.fill();
@@ -193,8 +202,10 @@ export class Renderer {
       g.stroke();
       // reflets clairs (tramage rétro)
       g.fillStyle = "rgba(210,235,255,0.55)";
-      g.fillRect(cx + ((h % 13) - 6), cy + ((h % 5) - 2), 2, 1);
-      g.fillRect(cx + ((h % 19) - 9), cy + ((h % 7) - 3), 2, 1);
+      g.fillRect(cx + ((h + waterFrame) % 13) - 6, cy + (h % 5) - 2, 2, 1);
+      if (wave < 4) {
+        g.fillRect(cx + ((h + waterFrame * 2) % 19) - 9, cy + (h % 7) - 3, 2, 1);
+      }
       return;
     }
     const shades = ["#5f9447", "#669c4d", "#5a8d43"];
