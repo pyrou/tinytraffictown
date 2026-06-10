@@ -65,7 +65,11 @@ export class Game {
 
     this.setMessage(shared.msg ?? t(save ? "msgRestored" : "msgWelcome"));
 
-    canvas.addEventListener("click", () => this.startMusic(), { once: true });
+    // La lecture audio exige un geste utilisateur : on démarre la musique au
+    // tout premier clic/toucher n'importe où (bouton « Jouer » de l'onboarding
+    // inclus, qui recouvre le canvas), une seule fois.
+    const kick = () => this.startMusic();
+    document.addEventListener("pointerdown", kick, { once: true });
     window.addEventListener("beforeunload", () => this.autosave());
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.autosave();
