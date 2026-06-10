@@ -1,5 +1,8 @@
 # 🚗 Tiny Traffic Town
 
+<img width="1280" height="816" alt="image" src="https://github.com/user-attachments/assets/785eedc9-3fe9-462e-a28d-a47eaf936dfe" />
+
+
 *A tiny isometric traffic-management game with big late-90s energy.*
 A mini motorways with RollerCoaster Tycoon bridges.
 
