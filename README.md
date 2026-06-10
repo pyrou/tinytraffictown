@@ -1,6 +1,6 @@
 # 🚗 Tiny Traffic Town
 
-<img width="1280" height="816" alt="image" src="https://github.com/user-attachments/assets/785eedc9-3fe9-462e-a28d-a47eaf936dfe" />
+<img width="1280" height="816" alt="Tiny Traffic Town gameplay screenshot" src="public/screenshot.png" />
 
 
 *A tiny isometric traffic-management game with big late-90s energy.*
