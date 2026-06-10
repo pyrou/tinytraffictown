@@ -85,6 +85,12 @@ export class UI {
     return s;
   }
 
+  // Évite de remplacer les nœuds texte à chaque frame, ce qui peut annuler
+  // certains clics sur Safari quand le pointeur est posé sur le libellé.
+  private setText(el: HTMLElement, text: string): void {
+    if (el.textContent !== text) el.textContent = text;
+  }
+
   private build(root: HTMLElement): void {
     // --- barre du haut ---
     const top = document.createElement("div");
@@ -346,9 +352,12 @@ export class UI {
   // Met à jour les libellés des entrées à état (langue / musique / effets).
   private refreshOptionsLabels(): void {
     const onOff = (b: boolean) => t(b ? "optionsOn" : "optionsOff");
-    this.btnOptLang.textContent = t("optionsLanguage", { v: getLang().toUpperCase() });
-    this.btnOptMusic.textContent = t("optionsMusic", { v: onOff(this.game.audio.isMusicEnabled()) });
-    this.btnOptAudio.textContent = t("optionsAudio", { v: onOff(this.game.audio.isSfxEnabled()) });
+    this.setText(this.btnOptLang, t("optionsLanguage", { v: getLang().toUpperCase() }));
+    this.setText(
+      this.btnOptMusic,
+      t("optionsMusic", { v: onOff(this.game.audio.isMusicEnabled()) }),
+    );
+    this.setText(this.btnOptAudio, t("optionsAudio", { v: onOff(this.game.audio.isSfxEnabled()) }));
   }
 
   private toggleOptionsMenu(): void {
@@ -378,11 +387,11 @@ export class UI {
   // Ré-applique tous les textes traduits (appelé au changement de langue).
   applyTexts(): void {
     for (const e of this.registry) {
-      if (e.text) e.el.textContent = t(e.text, e.textArgs);
+      if (e.text) this.setText(e.el, t(e.text, e.textArgs));
       if (e.html) e.el.innerHTML = t(e.html);
       if (e.title) e.el.title = t(e.title, e.titleArgs);
     }
-    this.btnLang.textContent = getLang() === "fr" ? "EN" : "FR";
+    this.setText(this.btnLang, getLang() === "fr" ? "EN" : "FR");
     document.documentElement.lang = getLang();
     this.refreshOptionsLabels();
     this.refreshTools();
@@ -392,29 +401,35 @@ export class UI {
     for (const [key, b] of this.toolButtons) {
       b.classList.toggle("active", this.game.input.tool === key);
     }
-    this.elLevel.textContent = t("level", { n: this.game.input.level });
-    this.btnDir.textContent = t("rampDir", {
-      d: t(`dir${this.game.input.rampDir}` as StringKey),
-    });
+    this.setText(this.elLevel, t("level", { n: this.game.input.level }));
+    this.setText(
+      this.btnDir,
+      t("rampDir", {
+        d: t(`dir${this.game.input.rampDir}` as StringKey),
+      }),
+    );
   }
 
   update(): void {
     const sim = this.game.sim;
-    this.elCredits.textContent = `¤ ${sim.credits}`;
-    this.elScore.textContent = t("statScore", { n: sim.score });
-    this.elBest.textContent = t("statBest", { n: this.game.best });
-    this.elPayout.textContent = t("statPayout", {
-      a: Config.PAYOUT_AMOUNT,
-      s: Math.ceil(sim.payoutTimer),
-    });
-    this.btnPause.textContent = this.game.paused ? t("resume") : t("pause");
-    this.btnSpeed.textContent = `x${this.game.speed}`;
-    this.elStatus.textContent = this.game.message || t("ready");
+    this.setText(this.elCredits, `¤ ${sim.credits}`);
+    this.setText(this.elScore, t("statScore", { n: sim.score }));
+    this.setText(this.elBest, t("statBest", { n: this.game.best }));
+    this.setText(
+      this.elPayout,
+      t("statPayout", {
+        a: Config.PAYOUT_AMOUNT,
+        s: Math.ceil(sim.payoutTimer),
+      }),
+    );
+    this.setText(this.btnPause, this.game.paused ? t("resume") : t("pause"));
+    this.setText(this.btnSpeed, `x${this.game.speed}`);
+    this.setText(this.elStatus, this.game.message || t("ready"));
   }
 
   showGameOver(score: number, best: number): void {
-    this.elFinalScore.textContent = t("overScore", { n: score });
-    this.elFinalBest.textContent = t("overBest", { n: best });
+    this.setText(this.elFinalScore, t("overScore", { n: score }));
+    this.setText(this.elFinalBest, t("overBest", { n: best }));
     const msg = encodeURIComponent(t("shareScore", { n: score, url: Config.GAME_URL }));
     this.btnShareX.href = `https://x.com/intent/post?text=${msg}`;
     this.btnShareBsky.href = `https://bsky.app/intent/compose?text=${msg}`;
