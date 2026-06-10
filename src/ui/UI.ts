@@ -28,6 +28,7 @@ export class UI {
   private elLevel!: HTMLElement;
   private btnDir!: HTMLButtonElement;
   private elStatus!: HTMLElement;
+  private helpPanel!: HTMLElement;
   private debugPanel!: HTMLElement;
   private debugColor = 0;
   private overlay!: HTMLElement;
@@ -115,6 +116,7 @@ export class UI {
       this.btn(null, "rotRightTip", () => this.game.rotate(1)),
       this.btn(null, "debugTip", () => this.debugPanel.classList.toggle("hidden")),
       this.btnLang,
+      this.btn("helpBtn", "helpBtnTip", () => this.showHelp()),
       this.btn("shareBtn", "shareTip", () => this.game.shareMap()),
       this.btn("newGame", "newGameTip", () => this.game.newGame()),
     );
@@ -227,11 +229,16 @@ export class UI {
     root.appendChild(this.elStatus);
 
     // --- aide ---
-    const help = document.createElement("div");
-    help.id = "help";
-    help.className = "panel";
-    this.reg({ el: help, html: "help" });
-    root.appendChild(help);
+    this.helpPanel = document.createElement("div");
+    this.helpPanel.id = "help";
+    this.helpPanel.className = "panel";
+    const helpClose = this.btn(null, "closeHelpTip", () => this.hideHelp());
+    helpClose.className = "close";
+    helpClose.textContent = "×";
+    const helpBody = document.createElement("div");
+    this.reg({ el: helpBody, html: "help" });
+    this.helpPanel.append(helpClose, helpBody);
+    root.appendChild(this.helpPanel);
 
     // --- écran de fin ---
     this.overlay = document.createElement("div");
@@ -264,10 +271,16 @@ export class UI {
     if (hasSeenOnboarding()) this.onboard.classList.add("hidden");
     const oPanel = document.createElement("div");
     oPanel.className = "panel";
+    const oClose = this.btn(null, "closeOnboardingTip", () => this.hideOnboarding());
+    oClose.className = "close";
+    oClose.textContent = "×";
     const oTitle = document.createElement("h1");
     this.reg({ el: oTitle, text: "onboardTitle" });
     const oText = document.createElement("p");
     this.reg({ el: oText, text: "onboardText" });
+    const oDevice = document.createElement("p");
+    oDevice.className = "device-note";
+    this.reg({ el: oDevice, text: "onboardDevice" });
     const oActions = document.createElement("div");
     oActions.className = "actions";
     const oStar = this.linkBtn("starGithub", "starGithubTip", Config.GITHUB_URL);
@@ -277,7 +290,7 @@ export class UI {
     oBadge.alt = "GitHub stars";
     const oStart = this.btn("startPlaying", "startPlayingTip", () => this.hideOnboarding());
     oActions.append(oStar, oBadge, oStart);
-    oPanel.append(oTitle, oText, oActions);
+    oPanel.append(oClose, oTitle, oText, oDevice, oActions);
     this.onboard.appendChild(oPanel);
     root.appendChild(this.onboard);
   }
@@ -285,6 +298,14 @@ export class UI {
   private hideOnboarding(): void {
     this.onboard.classList.add("hidden");
     markOnboardingSeen();
+  }
+
+  private hideHelp(): void {
+    this.helpPanel.classList.add("hidden");
+  }
+
+  private showHelp(): void {
+    this.helpPanel.classList.remove("hidden");
   }
 
   private showOnboarding(): void {

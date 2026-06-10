@@ -71,5 +71,5 @@ export const Config = {
 
   // --- Liens ---
   GITHUB_URL: "https://github.com/pyrou/tinytraffictown",
-  GAME_URL: "https://pyrou.github.io/tinytraffictown", // page de jeu (partage social)
+  GAME_URL: "https://pyrou.github.io/tinytraffictown/", // page de jeu (partage social)
 };

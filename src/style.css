@@ -138,14 +138,41 @@ canvas#game {
   color: #2a2a2a;
 }
 
+@media (max-width: 760px) {
+  #status {
+    bottom: 44px;
+    left: 6px;
+    right: auto;
+    max-width: calc(100% - 12px);
+  }
+}
+
 #help {
   position: absolute;
   top: 48px;
   right: 6px;
-  padding: 5px 8px;
+  padding: 20px 8px 5px;
   color: #444;
   line-height: 1.5;
   max-width: 230px;
+}
+
+#help.hidden {
+  display: none;
+}
+
+#help button.close {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  margin: 0;
+  padding: 0;
+  width: 18px;
+  height: 17px;
+  min-width: 18px;
+  line-height: 11px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 #debug {
@@ -206,6 +233,7 @@ canvas#game {
 
 #overlay .panel,
 #onboard .panel {
+  position: relative;
   padding: 18px 28px;
   text-align: center;
   min-width: 280px;
@@ -225,6 +253,12 @@ canvas#game {
   font-size: 12px;
 }
 
+#onboard .device-note {
+  margin-top: 10px;
+  color: #5a5148;
+  font-weight: bold;
+}
+
 #overlay button,
 #overlay .btn-link,
 #onboard button,
@@ -232,6 +266,20 @@ canvas#game {
   margin-top: 14px;
   font-size: 13px;
   padding: 5px 18px;
+}
+
+#onboard button.close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  margin: 0;
+  padding: 0;
+  width: 22px;
+  height: 20px;
+  min-width: 22px;
+  line-height: 14px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 #onboard .actions {

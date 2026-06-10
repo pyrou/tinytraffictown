@@ -15,6 +15,8 @@ export class Input {
   private painting = false;
   private panning = false;
   private lastPan = { x: 0, y: 0 };
+  private touchPanning = false;
+  private lastTouchPan = { x: 0, y: 0 };
 
   constructor(canvas: HTMLCanvasElement, game: Game) {
     this.canvas = canvas;
@@ -30,6 +32,10 @@ export class Input {
     canvas.addEventListener("mouseleave", () => (this.hover = null));
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     canvas.addEventListener("wheel", (e) => this.onWheel(e), { passive: false });
+    canvas.addEventListener("touchstart", (e) => this.onTouchStart(e), { passive: false });
+    canvas.addEventListener("touchmove", (e) => this.onTouchMove(e), { passive: false });
+    canvas.addEventListener("touchend", (e) => this.onTouchEnd(e));
+    canvas.addEventListener("touchcancel", (e) => this.onTouchEnd(e));
     window.addEventListener("keydown", (e) => this.onKey(e));
   }
 
@@ -97,6 +103,42 @@ export class Input {
   private onWheel(e: WheelEvent): void {
     e.preventDefault();
     this.setLevel(this.level + (e.deltaY < 0 ? 1 : -1));
+  }
+
+  private touchCenter(touches: TouchList): { x: number; y: number } {
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2,
+    };
+  }
+
+  private onTouchStart(e: TouchEvent): void {
+    if (e.touches.length < 2) return;
+    e.preventDefault();
+    this.painting = false;
+    this.panning = false;
+    this.touchPanning = true;
+    this.hover = null;
+    this.lastTouchPan = this.touchCenter(e.touches);
+  }
+
+  private onTouchMove(e: TouchEvent): void {
+    if (!this.touchPanning || e.touches.length < 2) return;
+    e.preventDefault();
+    const center = this.touchCenter(e.touches);
+    const dx = (center.x - this.lastTouchPan.x) / Config.RENDER_SCALE;
+    const dy = (center.y - this.lastTouchPan.y) / Config.RENDER_SCALE;
+    this.game.renderer.panX += dx;
+    this.game.renderer.panY += dy;
+    this.lastTouchPan = center;
+  }
+
+  private onTouchEnd(e: TouchEvent): void {
+    if (e.touches.length >= 2) {
+      this.lastTouchPan = this.touchCenter(e.touches);
+      return;
+    }
+    this.touchPanning = false;
   }
 
   private act(x: number, y: number): void {

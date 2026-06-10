@@ -17,6 +17,8 @@ const fr = {
   newGameTip: "Recommencer à zéro",
   shareBtn: "Partager",
   shareTip: "Copier un lien de partage de la carte",
+  helpBtn: "Aide",
+  helpBtnTip: "Afficher le panneau d'aide",
   statScore: "Score {n}",
   statBest: "Record {n}",
   statPayout: "Subvention +{a} dans {s}s",
@@ -44,12 +46,14 @@ const fr = {
     "<b>Connectez maisons et entreprises de même couleur.</b><br>" +
     "Clic gauche : construire / démolir<br>" +
     "Clic droit : déplacer la caméra<br>" +
+    "Mobile : deux doigts pour déplacer la caméra<br>" +
     "Molette / Q / E : niveau de hauteur<br>" +
     "R : rotation &nbsp;·&nbsp; T : sens de rampe<br>" +
     "Espace : pause &nbsp;·&nbsp; 1 / 2 : vitesse<br>" +
     "Double-clic (route) : axe prioritaire d'un croisement en X<br>" +
     "Croisement : écart de 2 niveaux requis.<br>" +
     "Rivière : pont au niveau 1 minimum.",
+  closeHelpTip: "Masquer le panneau d'aide",
 
   // Menu de debug
   debugHouse: "+ Maison",
@@ -87,6 +91,8 @@ const fr = {
   onboardText:
     "Construisez des routes pour relier les maisons aux entreprises de même " +
     "couleur. Livrez les commandes avant que la jauge de danger ne déborde !",
+  onboardDevice: "Le jeu est plus confortable sur un écran d'ordinateur ou une tablette.",
+  closeOnboardingTip: "Masquer cette fenêtre d'aide",
   startPlaying: "▶ Jouer",
   startPlayingTip: "Fermer cette fenêtre et commencer à jouer",
 
@@ -138,6 +144,8 @@ const en: Record<StringKey, string> = {
   newGameTip: "Start over",
   shareBtn: "Share",
   shareTip: "Copy a shareable link to this map",
+  helpBtn: "Help",
+  helpBtnTip: "Show the help panel",
   statScore: "Score {n}",
   statBest: "Best {n}",
   statPayout: "Grant +{a} in {s}s",
@@ -163,12 +171,14 @@ const en: Record<StringKey, string> = {
     "<b>Connect houses to businesses of the same color.</b><br>" +
     "Left click: build / demolish<br>" +
     "Right click: pan the camera<br>" +
+    "Mobile: two fingers to pan the camera<br>" +
     "Wheel / Q / E: height level<br>" +
     "R: rotate &nbsp;·&nbsp; T: ramp direction<br>" +
     "Space: pause &nbsp;·&nbsp; 1 / 2: speed<br>" +
     "Double-click (road): priority axis of a 4-way junction<br>" +
     "Crossing: 2-level gap required.<br>" +
     "River: bridge at level 1 minimum.",
+  closeHelpTip: "Hide the help panel",
 
   debugHouse: "+ House",
   debugHouseTip: "Add a house of the chosen color",
@@ -203,6 +213,8 @@ const en: Record<StringKey, string> = {
   onboardText:
     "Build roads to connect houses to businesses of the same color. " +
     "Deliver orders before the danger gauge fills up!",
+  onboardDevice: "The game is more comfortable on a computer screen or tablet.",
+  closeOnboardingTip: "Hide this help window",
   startPlaying: "▶ Play",
   startPlayingTip: "Close this window and start playing",
 
