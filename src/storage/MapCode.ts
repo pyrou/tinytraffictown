@@ -8,20 +8,21 @@
 //   8   taille de grille (doit correspondre à celle du jeu)
 //   10  nb cases de rivière   puis 10 bits/case (index = x*size + y)
 //   10  nb arbres             puis 10 bits/case
-//   12  nb segments de route  puis 16 bits/segment : 10 case + 3 niveau + 3 rampe (4 = plat)
+//   12  nb segments de route  puis 16/17 bits/segment : 10 case + 3 niveau +
+//       3 rampe (4 = plat) [+ 1 axe prioritaire (v2+) : 1 = N/S sur un croisement X]
 //   10  nb bâtiments          puis 14 bits/bâtiment : 10 case + 3 couleur + 1 type (1 = maison)
 
 import type { BuildingType, Dir } from "../core/types";
 
 // Version courante du format de partage. À incrémenter à chaque évolution ;
 // le jeu ouvre toute carte de version <= MAP_VERSION.
-export const MAP_VERSION = 1;
+export const MAP_VERSION = 2;
 
 export interface MapData {
   size: number;
   river: number[]; // index de cases
   trees: number[];
-  pieces: { cell: number; level: number; ramp: Dir | null }[];
+  pieces: { cell: number; level: number; ramp: Dir | null; mainAxis?: 0 | 1 }[];
   buildings: { cell: number; type: BuildingType; color: number }[];
 }
 
@@ -95,6 +96,7 @@ export function encodeMap(m: MapData): string {
     w.write(p.cell, 10);
     w.write(p.level, 3);
     w.write(p.ramp === null ? 4 : p.ramp, 3);
+    w.write(p.mainAxis === 1 ? 1 : 0, 1); // axe prioritaire (croisements X)
   }
   w.write(m.buildings.length, 10);
   for (const b of m.buildings) {
@@ -129,7 +131,9 @@ export function decodeMap(code: string): MapData | "badVersion" | null {
       const level = r.read(3);
       const ramp = r.read(3);
       if (ramp > 4) throw new Error("ramp");
-      m.pieces.push({ cell, level, ramp: ramp === 4 ? null : (ramp as Dir) });
+      // Le bit d'axe prioritaire n'existe que depuis la v2.
+      const mainAxis = version >= 2 && r.read(1) === 1 ? (1 as const) : undefined;
+      m.pieces.push({ cell, level, ramp: ramp === 4 ? null : (ramp as Dir), mainAxis });
     }
     const nBuildings = r.read(10);
     for (let i = 0; i < nBuildings; i++) {

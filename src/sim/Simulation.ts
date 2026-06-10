@@ -32,7 +32,7 @@ export interface Car {
 }
 
 export interface SaveData {
-  pieces: { x: number; y: number; l: number; r: number | null; c: number }[];
+  pieces: { x: number; y: number; l: number; r: number | null; c: number; m?: 0 | 1 }[];
   buildings: Building[];
   credits: number;
   score: number;
@@ -339,12 +339,12 @@ export class Simulation {
     return `${w.x},${w.y},${w.z},X`;
   }
 
-  // Une intersection (T ou X) : segment plat relié à 3 voisins ou plus.
-  // Les rampes (2 connexions max) ne sont jamais des intersections.
-  isIntersection(x: number, y: number, z: number): boolean {
+  // Bras connectés d'un segment plat, par direction grille (false sinon).
+  // Les rampes (2 connexions max) ne renvoient aucun bras.
+  private connectedArms(x: number, y: number, z: number): [boolean, boolean, boolean, boolean] {
+    const arms: [boolean, boolean, boolean, boolean] = [false, false, false, false];
     const p = this.grid.pieceAtZ(x, y, z);
-    if (!p || p.ramp !== null) return false;
-    let n = 0;
+    if (!p || p.ramp !== null) return arms;
     for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
       const eh = Grid.edgeHeight(p, d);
       if (eh === null) continue;
@@ -353,12 +353,45 @@ export class Simulation {
       if (!this.grid.inBounds(nx, ny)) continue;
       for (const q of this.grid.cell(nx, ny).pieces) {
         if (Grid.edgeHeight(q, opp(d)) === eh) {
-          n++;
+          arms[d] = true;
           break;
         }
       }
     }
-    return n >= 3;
+    return arms;
+  }
+
+  // Une intersection (T ou X) : segment plat relié à 3 voisins ou plus.
+  isIntersection(x: number, y: number, z: number): boolean {
+    const a = this.connectedArms(x, y, z);
+    return (a[0] ? 1 : 0) + (a[1] ? 1 : 0) + (a[2] ? 1 : 0) + (a[3] ? 1 : 0) >= 3;
+  }
+
+  // Axe prioritaire d'une intersection : 0 = E/O (dirs 0,2), 1 = N/S (dirs 1,3).
+  // Pour un T, c'est l'axe de la route traversante (déduit). Pour un X, c'est
+  // l'axe mémorisé sur le segment (modifiable par double-clic, 0 par défaut).
+  mainAxisAt(x: number, y: number, z: number): 0 | 1 {
+    const a = this.connectedArms(x, y, z);
+    if (a[0] && a[1] && a[2] && a[3]) {
+      return this.grid.pieceAtZ(x, y, z)?.mainAxis ?? 0;
+    }
+    if (a[0] && a[2]) return 0;
+    return 1; // T traversé selon N/S
+  }
+
+  // Bascule l'axe prioritaire d'un croisement en X (sans effet sur les T).
+  toggleMainAxis(x: number, y: number): boolean {
+    const cell = this.grid.cell(x, y);
+    for (let i = cell.pieces.length - 1; i >= 0; i--) {
+      const p = cell.pieces[i];
+      if (p.ramp !== null) continue;
+      const a = this.connectedArms(x, y, p.level);
+      if (a[0] && a[1] && a[2] && a[3]) {
+        p.mainAxis = (p.mainAxis ?? 0) === 0 ? 1 : 0;
+        return true;
+      }
+    }
+    return false;
   }
 
   private static dirBetween(a: Waypoint, b: Waypoint): Dir {
@@ -368,19 +401,89 @@ export class Simulation {
     return 3;
   }
 
-  // Une voiture arrive-t-elle par la droite à l'intersection b (entrée en d) ?
-  private carFromRight(b: Waypoint, d: Dir, self: Car): boolean {
-    const rd = ((d + 1) % 4) as Dir;
-    const cx = b.x + DX[rd];
-    const cy = b.y + DY[rd];
+  // Tente d'engager une voiture dans l'intersection b (entrée en direction d).
+  // Renvoie true si elle peut avancer (réservation prise), false si elle attend.
+  // Règle : sur l'axe prioritaire, tout droit ou à droite = prioritaire (aucun
+  // arrêt). À gauche, ou depuis l'axe secondaire/branche, on marque l'arrêt puis
+  // on cède le passage aux véhicules prioritaires.
+  private enterIntersection(car: Car, b: Waypoint, d: Dir, dt: number): boolean {
+    const M = this.mainAxisAt(b.x, b.y, b.z);
+    const next = car.path[car.seg + 2];
+    const d2 = next && next.road ? Simulation.dirBetween(b, next) : d;
+    const onMain = (d % 2) === M;
+    const turnLeft = d2 === (((d + 3) % 4) as Dir);
+    const priority = onMain && !turnLeft;
+
+    if (priority) {
+      // Prioritaire : pas d'arrêt. On occupe sa voie ; on patiente seulement si
+      // un véhicule cède déjà le passage à l'intérieur (verrou exclusif pris).
+      const key = this.laneKey(b, d);
+      const laneOwner = this.cellClaims.get(key);
+      const xOwner = this.cellClaims.get(this.exclKey(b));
+      if (
+        (laneOwner !== undefined && laneOwner !== car) ||
+        (xOwner !== undefined && xOwner !== car)
+      ) {
+        car.waitTime += dt;
+        return false;
+      }
+      this.cellClaims.set(key, car);
+      car.claims.push(key);
+      car.waitTime = 0;
+      car.moving = true;
+      return true;
+    }
+
+    // Cédez-le-passage : arrêt obligatoire, même sans trafic.
+    if (!car.stopServed) {
+      car.stopTimer -= dt;
+      if (car.stopTimer <= 0) car.stopServed = true;
+      return false;
+    }
+    const key = this.exclKey(b);
+    const owner = this.cellClaims.get(key);
+    let blocked = owner !== undefined && owner !== car;
+    if (!blocked) blocked = this.priorityInside(b, car);
+    // Priorité aux véhicules de l'axe principal, levée après un long blocage
+    // (anti-interblocage : le verrou exclusif sérialise alors les passages).
+    if (!blocked && car.waitTime < Config.YIELD_DEADLOCK_TIME) {
+      blocked = this.priorityApproaching(b, M, car);
+    }
+    if (blocked) {
+      car.waitTime += dt;
+      return false;
+    }
+    this.cellClaims.set(key, car);
+    car.claims.push(key);
+    car.waitTime = 0;
+    car.moving = true;
+    return true;
+  }
+
+  // Un véhicule prioritaire traverse-t-il déjà l'intersection b (voie réservée) ?
+  private priorityInside(b: Waypoint, self: Car): boolean {
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      const o = this.cellClaims.get(this.laneKey(b, d));
+      if (o !== undefined && o !== self) return true;
+    }
+    return false;
+  }
+
+  // Un véhicule prioritaire (axe principal M, tout droit ou à droite) attend-il
+  // ou arrive-t-il sur une case voisine prêt à entrer dans l'intersection b ?
+  private priorityApproaching(b: Waypoint, M: 0 | 1, self: Car): boolean {
     for (const o of this.cars) {
       if (o === self || o.seg + 1 >= o.path.length) continue;
       const oa = o.path[o.seg];
       const ob = o.path[o.seg + 1];
       if (!ob.road) continue;
-      if (oa.x === cx && oa.y === cy && ob.x === b.x && ob.y === b.y && Math.abs(ob.z - b.z) < 0.75) {
-        return true;
-      }
+      if (ob.x !== b.x || ob.y !== b.y || Math.abs(ob.z - b.z) >= 0.75) continue;
+      const od = Simulation.dirBetween(oa, ob);
+      if ((od % 2) !== M) continue;
+      const oc = o.path[o.seg + 2];
+      const od2 = oc && oc.road ? Simulation.dirBetween(ob, oc) : od;
+      const left = od2 === (((od + 3) % 4) as Dir);
+      if (!left) return true;
     }
     return false;
   }
@@ -451,29 +554,20 @@ export class Simulation {
           car.moving = true;
         } else {
           const d = Simulation.dirBetween(a, b);
-          const inter = this.isIntersection(b.x, b.y, b.z);
-          // Arrêt obligatoire au cédez-le-passage, même sans trafic.
-          if (inter && !car.stopServed) {
-            car.stopTimer -= dt;
-            if (car.stopTimer <= 0) car.stopServed = true;
-            continue;
+          if (this.isIntersection(b.x, b.y, b.z)) {
+            if (!this.enterIntersection(car, b, d, dt)) continue;
+          } else {
+            const key = this.laneKey(b, d);
+            const owner = this.cellClaims.get(key);
+            if (owner !== undefined && owner !== car) {
+              car.waitTime += dt;
+              continue;
+            }
+            this.cellClaims.set(key, car);
+            car.claims.push(key);
+            car.waitTime = 0;
+            car.moving = true;
           }
-          const key = inter ? this.exclKey(b) : this.laneKey(b, d);
-          const owner = this.cellClaims.get(key);
-          let blocked = owner !== undefined && owner !== car;
-          // Priorité à droite (levée après un long blocage pour éviter
-          // l'interblocage à 4 voitures).
-          if (!blocked && inter && car.waitTime < Config.YIELD_DEADLOCK_TIME) {
-            blocked = this.carFromRight(b, d, car);
-          }
-          if (blocked) {
-            car.waitTime += dt;
-            continue;
-          }
-          this.cellClaims.set(key, car);
-          car.claims.push(key);
-          car.waitTime = 0;
-          car.moving = true;
         }
       }
 
@@ -714,7 +808,7 @@ export class Simulation {
     for (let x = 0; x < this.grid.size; x++) {
       for (let y = 0; y < this.grid.size; y++) {
         for (const p of this.grid.cell(x, y).pieces) {
-          pieces.push({ x, y, l: p.level, r: p.ramp, c: p.cost });
+          pieces.push({ x, y, l: p.level, r: p.ramp, c: p.cost, m: p.mainAxis });
         }
         if (this.grid.cell(x, y).river) river.push({ x, y });
         if (this.grid.cell(x, y).tree) trees.push({ x, y });
@@ -749,7 +843,8 @@ export class Simulation {
         const c = this.grid.cell(x, y);
         if (c.river) m.river.push(idx);
         if (c.tree) m.trees.push(idx);
-        for (const p of c.pieces) m.pieces.push({ cell: idx, level: p.level, ramp: p.ramp });
+        for (const p of c.pieces)
+          m.pieces.push({ cell: idx, level: p.level, ramp: p.ramp, mainAxis: p.mainAxis });
       }
     }
     for (const b of this.buildings) {
@@ -771,6 +866,7 @@ export class Simulation {
         level: p.level,
         ramp: p.ramp,
         cost: s.pieceCost(p.level, p.ramp),
+        mainAxis: p.mainAxis,
       });
     }
     for (const b of m.buildings) {
@@ -791,7 +887,12 @@ export class Simulation {
         s.grid.cell(a.x, a.y).tree = true;
       }
       for (const p of d.pieces) {
-        s.grid.addPiece(p.x, p.y, { level: p.l, ramp: p.r as Dir | null, cost: p.c });
+        s.grid.addPiece(p.x, p.y, {
+          level: p.l,
+          ramp: p.r as Dir | null,
+          cost: p.c,
+          mainAxis: p.m,
+        });
       }
       for (const b of d.buildings) {
         const copy: Building = { ...b, assigned: 0, activeCars: 0 };

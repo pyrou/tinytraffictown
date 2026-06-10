@@ -11,6 +11,9 @@ export interface RoadPiece {
   level: number;
   ramp: Dir | null;
   cost: number; // prix payé, remboursé à la destruction
+  // Axe prioritaire d'un croisement en X : 0 = E/O, 1 = N/S. Modifiable par
+  // double-clic (outil route) ; ignoré pour les T (axe déduit de la géométrie).
+  mainAxis?: 0 | 1;
 }
 
 export type BuildingType = "house" | "biz";

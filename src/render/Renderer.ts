@@ -301,6 +301,21 @@ export class Renderer {
         g.fillStyle = "rgba(255,255,255,0.08)";
         this.diamondPath(cx, cy, p.level, raise);
         g.fill();
+        // Repère de l'axe prioritaire : trait vert reliant les deux bords de l'axe.
+        const M = sim.mainAxisAt(x, y, p.level);
+        const yc = cy - p.level * Z;
+        g.strokeStyle = "rgba(120,230,140,0.9)";
+        g.lineWidth = 1;
+        for (const gd of (M === 0 ? [0, 2] : [1, 3]) as Dir[]) {
+          const rd = this.rotDir(gd);
+          const [c1, c2] = EDGE_CORNERS[rd];
+          const mx = (CORNERS[c1][0] + CORNERS[c2][0]) / 2;
+          const my = (CORNERS[c1][1] + CORNERS[c2][1]) / 2;
+          g.beginPath();
+          g.moveTo(cx, yc);
+          g.lineTo(cx + mx, yc + my);
+          g.stroke();
+        }
       } else {
         // ligne d'arrêt blanche sur les bords menant à une intersection
         for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {

@@ -105,6 +105,11 @@ export class Game {
     if (r.msg) this.setMessage(r.msg);
   }
 
+  // Double-clic (outil route) sur un croisement en X : bascule l'axe prioritaire.
+  toggleMainAxis(x: number, y: number): void {
+    if (this.sim.toggleMainAxis(x, y)) this.setMessage(t("msgAxisSwitched"));
+  }
+
   // ---- contrôles ----
 
   togglePause(): void {

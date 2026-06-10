@@ -47,6 +47,7 @@ const fr = {
     "Molette / Q / E : niveau de hauteur<br>" +
     "R : rotation &nbsp;·&nbsp; T : sens de rampe<br>" +
     "Espace : pause &nbsp;·&nbsp; 1 / 2 : vitesse<br>" +
+    "Double-clic (route) : axe prioritaire d'un croisement en X<br>" +
     "Croisement : écart de 2 niveaux requis.<br>" +
     "Rivière : pont au niveau 1 minimum.",
 
@@ -99,6 +100,7 @@ const fr = {
   msgNoWater: "Impossible de construire sur l'eau (pont au niveau 1 minimum)",
   msgNothingHere: "Rien à démolir ici",
   msgTreeCut: "Arbre abattu",
+  msgAxisSwitched: "Axe prioritaire du croisement basculé",
   msgShareCopied: "Lien de la carte copié dans le presse-papiers !",
   msgMapLoaded: "Carte partagée chargée !",
   msgMapInvalid: "Lien de carte invalide",
@@ -158,6 +160,7 @@ const en: Record<StringKey, string> = {
     "Wheel / Q / E: height level<br>" +
     "R: rotate &nbsp;·&nbsp; T: ramp direction<br>" +
     "Space: pause &nbsp;·&nbsp; 1 / 2: speed<br>" +
+    "Double-click (road): priority axis of a 4-way junction<br>" +
     "Crossing: 2-level gap required.<br>" +
     "River: bridge at level 1 minimum.",
 
@@ -206,6 +209,7 @@ const en: Record<StringKey, string> = {
   msgNoWater: "Can't build on water (bridge at level 1 minimum)",
   msgNothingHere: "Nothing to demolish here",
   msgTreeCut: "Tree cut down",
+  msgAxisSwitched: "Junction priority axis switched",
   msgShareCopied: "Map link copied to clipboard!",
   msgMapLoaded: "Shared map loaded!",
   msgMapInvalid: "Invalid map link",

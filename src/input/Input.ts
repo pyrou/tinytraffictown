@@ -22,6 +22,7 @@ export class Input {
 
     canvas.addEventListener("mousedown", (e) => this.onMouseDown(e));
     canvas.addEventListener("mousemove", (e) => this.onMouseMove(e));
+    canvas.addEventListener("dblclick", (e) => this.onDblClick(e));
     window.addEventListener("mouseup", () => {
       this.painting = false;
       this.panning = false;
@@ -83,6 +84,14 @@ export class Input {
     const changed = !cell || !this.hover || cell.x !== this.hover.x || cell.y !== this.hover.y;
     this.hover = cell;
     if (this.painting && cell && changed) this.act(cell.x, cell.y);
+  }
+
+  // Double-clic en mode route : bascule l'axe prioritaire d'un croisement en X.
+  private onDblClick(e: MouseEvent): void {
+    if (e.button !== 0 || this.tool !== "road") return;
+    const { px, py } = this.canvasPos(e);
+    const cell = this.game.renderer.screenToCell(px, py);
+    if (cell) this.game.toggleMainAxis(cell.x, cell.y);
   }
 
   private onWheel(e: WheelEvent): void {
