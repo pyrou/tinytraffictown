@@ -6,6 +6,7 @@ export interface Cell {
   pieces: RoadPiece[]; // triées par niveau croissant
   building: Building | null;
   river: boolean; // case d'eau : seul un pont (niveau >= RIVER_BRIDGE_LEVEL) est permis
+  tree: boolean; // arbre décoratif : détruit par toute construction, ne repousse pas
 }
 
 export class Grid {
@@ -17,6 +18,7 @@ export class Grid {
       pieces: [],
       building: null,
       river: false,
+      tree: false,
     }));
   }
 

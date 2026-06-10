@@ -13,6 +13,7 @@ import {
   saveGame,
   saveOptions,
 } from "./storage/Storage";
+import { decodeMap, encodeMap } from "./storage/MapCode";
 import { UI } from "./ui/UI";
 
 export class Game {
@@ -41,8 +42,10 @@ export class Game {
     canvas.id = "game";
     root.appendChild(canvas);
 
-    const save = loadGame();
-    this.sim = save ? Simulation.fromSave(save) : new Simulation();
+    // Une carte partagée dans l'URL (#…) prime sur la sauvegarde locale.
+    const shared = this.loadSharedMap();
+    const save = shared.sim ? null : loadGame();
+    this.sim = shared.sim ?? (save ? Simulation.fromSave(save) : new Simulation());
     this.sim.onMessage = (m) => this.setMessage(m);
 
     this.renderer = new Renderer(canvas);
@@ -52,7 +55,7 @@ export class Game {
     this.input = new Input(canvas, this);
     this.ui = new UI(root, this);
 
-    this.setMessage(save ? t("msgRestored") : t("msgWelcome"));
+    this.setMessage(shared.msg ?? t(save ? "msgRestored" : "msgWelcome"));
 
     window.addEventListener("beforeunload", () => this.autosave());
     document.addEventListener("visibilitychange", () => {
@@ -122,6 +125,32 @@ export class Game {
     setLang(getLang() === "fr" ? "en" : "fr");
     this.saveOpts();
     this.ui.applyTexts();
+  }
+
+  // Lit une carte partagée dans le fragment d'URL, puis l'efface aussitôt :
+  // un refresh recharge la partie autosauvegardée, pas le snapshot partagé.
+  private loadSharedMap(): { sim: Simulation | null; msg: string | null } {
+    const code = location.hash.slice(1);
+    if (!code) return { sim: null, msg: null };
+    history.replaceState(null, "", location.pathname + location.search);
+    const m = decodeMap(code);
+    if (m === "badVersion") return { sim: null, msg: t("msgMapVersion") };
+    if (m === null || m.size !== Config.GRID) return { sim: null, msg: t("msgMapInvalid") };
+    return { sim: Simulation.fromMapData(m), msg: t("msgMapLoaded") };
+  }
+
+  // Copie dans le presse-papiers un lien contenant la carte courante.
+  shareMap(): void {
+    const code = encodeMap(this.sim.toMapData());
+    const url = `${location.origin}${location.pathname}${location.search}#${code}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(
+        () => this.setMessage(t("msgShareCopied")),
+        () => window.prompt(t("shareTip"), url),
+      );
+    } else {
+      window.prompt(t("shareTip"), url);
+    }
   }
 
   newGame(): void {

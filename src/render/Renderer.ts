@@ -151,6 +151,9 @@ export class Renderer {
           const b = cell.building;
           drawables.push({ key: base + 0.5, draw: () => this.drawBuilding(cx, cy, b) });
         }
+        if (cell.tree) {
+          drawables.push({ key: base + 0.5, draw: () => this.drawTree(cx, cy, x, y) });
+        }
       }
     }
 
@@ -510,6 +513,49 @@ export class Renderer {
     }
   }
 
+  // ---- arbres ----
+
+  // Arbre procédural : sapin ou feuillu selon un hachage de la cellule.
+  // Hauteur maintenue sous Z_STEP*2 pour passer sous les ponts de niveau 2.
+  private drawTree(cx: number, cy: number, gx: number, gy: number): void {
+    const g = this.ctx;
+    const h = (gx * 9241 + gy * 5407 + 77) % 91;
+    // ombre portée
+    g.fillStyle = "rgba(0,0,0,0.18)";
+    g.beginPath();
+    g.ellipse(cx + 1, cy + 1, 5, 2.5, 0, 0, Math.PI * 2);
+    g.fill();
+    // tronc
+    g.fillStyle = "#6b4a2b";
+    g.fillRect(cx - 1, cy - 3, 2, 4);
+    if (h % 2 === 0) {
+      // sapin : trois étages de triangles
+      const greens = ["#2f6b33", "#3a7c3c", "#2a5f2e"];
+      for (let i = 0; i < 3; i++) {
+        const w = 6 - i * 1.5;
+        const yb = cy - 3 - i * 3;
+        g.fillStyle = greens[(h + i) % 3];
+        g.beginPath();
+        g.moveTo(cx - w, yb);
+        g.lineTo(cx + w, yb);
+        g.lineTo(cx, yb - 4);
+        g.closePath();
+        g.fill();
+      }
+    } else {
+      // feuillu : houppier arrondi en deux teintes
+      const r = 4 + (h % 3);
+      g.fillStyle = "#4c8c3f";
+      g.beginPath();
+      g.ellipse(cx, cy - 4 - r, r + 1, r, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#5da04c";
+      g.beginPath();
+      g.ellipse(cx - 1, cy - 5 - r, r - 2, r - 2, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
   // ---- voitures ----
 
   private drawCar(sx: number, sy: number, color: number): void {
@@ -555,7 +601,7 @@ export class Renderer {
     let raise = [0, 0, 0, 0];
     let lvl = level;
     if (tool === "bulldoze") {
-      ok = game.sim.grid.topPiece(x, y) !== null;
+      ok = game.sim.grid.topPiece(x, y) !== null || game.sim.grid.cell(x, y).tree;
       const top = game.sim.grid.topPiece(x, y);
       lvl = top ? top.level : 0;
       if (top && top.ramp !== null) {

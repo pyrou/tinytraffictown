@@ -3,6 +3,7 @@ import type { SaveData } from "../sim/Simulation";
 const KEY_BEST = "ttt_best";
 const KEY_OPTS = "ttt_opts";
 const KEY_SAVE = "ttt_save";
+const KEY_ONBOARDED = "ttt_onboarded";
 
 export interface Options {
   rotation: number;
@@ -71,6 +72,22 @@ export function saveGame(d: SaveData): void {
 export function clearGame(): void {
   try {
     localStorage.removeItem(KEY_SAVE);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasSeenOnboarding(): boolean {
+  try {
+    return localStorage.getItem(KEY_ONBOARDED) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markOnboardingSeen(): void {
+  try {
+    localStorage.setItem(KEY_ONBOARDED, "1");
   } catch {
     /* ignore */
   }

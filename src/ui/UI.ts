@@ -2,6 +2,7 @@ import { Config } from "../Config";
 import type { Game } from "../Game";
 import { getLang, t } from "../i18n";
 import type { StringKey } from "../i18n";
+import { hasSeenOnboarding, markOnboardingSeen } from "../storage/Storage";
 
 // Élément traduisible : ré-appliqué à chaque changement de langue.
 interface TrEntry {
@@ -30,6 +31,7 @@ export class UI {
   private debugPanel!: HTMLElement;
   private debugColor = 0;
   private overlay!: HTMLElement;
+  private onboard!: HTMLElement;
   private elFinalScore!: HTMLElement;
   private elFinalBest!: HTMLElement;
 
@@ -59,6 +61,17 @@ export class UI {
     return b;
   }
 
+  // Lien externe stylé comme un bouton de panneau (ouvre un nouvel onglet).
+  private linkBtn(text: StringKey, title: StringKey, href: string): HTMLAnchorElement {
+    const a = document.createElement("a");
+    a.className = "btn-link";
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    this.reg({ el: a, text, title });
+    return a;
+  }
+
   private stat(): HTMLElement {
     const s = document.createElement("span");
     s.className = "stat";
@@ -74,6 +87,8 @@ export class UI {
     const title = document.createElement("span");
     title.className = "title";
     title.textContent = "TINY TRAFFIC TOWN";
+    title.style.cursor = "pointer";
+    title.addEventListener("click", () => this.showOnboarding());
     top.appendChild(title);
 
     this.elCredits = this.stat();
@@ -98,6 +113,7 @@ export class UI {
       this.btn(null, "rotRightTip", () => this.game.rotate(1)),
       this.btn(null, "debugTip", () => this.debugPanel.classList.toggle("hidden")),
       this.btnLang,
+      this.btn("shareBtn", "shareTip", () => this.game.shareMap()),
       this.btn("newGame", "newGameTip", () => this.game.newGame()),
     );
     // libellés fixes non traduits
@@ -228,9 +244,42 @@ export class UI {
     this.elFinalScore = document.createElement("p");
     this.elFinalBest = document.createElement("p");
     const replay = this.btn("replay", "replayTip", () => this.game.newGame());
-    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, replay);
+    const overStar = this.linkBtn("starGithub", "starGithubTip", Config.GITHUB_URL);
+    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, replay, overStar);
     this.overlay.appendChild(panel);
     root.appendChild(this.overlay);
+
+    // --- écran d'accueil ---
+    this.onboard = document.createElement("div");
+    this.onboard.id = "onboard";
+    if (hasSeenOnboarding()) this.onboard.classList.add("hidden");
+    const oPanel = document.createElement("div");
+    oPanel.className = "panel";
+    const oTitle = document.createElement("h1");
+    this.reg({ el: oTitle, text: "onboardTitle" });
+    const oText = document.createElement("p");
+    this.reg({ el: oText, text: "onboardText" });
+    const oActions = document.createElement("div");
+    oActions.className = "actions";
+    const oStar = this.linkBtn("starGithub", "starGithubTip", Config.GITHUB_URL);
+    const oBadge = document.createElement("img");
+    oBadge.className = "star-badge";
+    oBadge.src = `https://img.shields.io/github/stars/${Config.GITHUB_URL.replace("https://github.com/", "")}?style=social`;
+    oBadge.alt = "GitHub stars";
+    const oStart = this.btn("startPlaying", "startPlayingTip", () => this.hideOnboarding());
+    oActions.append(oStar, oBadge, oStart);
+    oPanel.append(oTitle, oText, oActions);
+    this.onboard.appendChild(oPanel);
+    root.appendChild(this.onboard);
+  }
+
+  private hideOnboarding(): void {
+    this.onboard.classList.add("hidden");
+    markOnboardingSeen();
+  }
+
+  private showOnboarding(): void {
+    this.onboard.classList.remove("hidden");
   }
 
   // Ré-applique tous les textes traduits (appelé au changement de langue).

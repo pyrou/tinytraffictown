@@ -59,6 +59,24 @@ canvas#game {
   background: #c8c4bc;
 }
 
+.btn-link {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 11px;
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #ffffff #6d6a64 #6d6a64 #ffffff;
+  padding: 2px 7px;
+  cursor: pointer;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.btn-link:active {
+  border-color: #6d6a64 #ffffff #ffffff #6d6a64;
+  background: #c8c4bc;
+}
+
 #topbar {
   position: absolute;
   top: 6px;
@@ -170,7 +188,8 @@ canvas#game {
   outline: 1px solid #1a1a1a;
 }
 
-#overlay {
+#overlay,
+#onboard {
   position: absolute;
   inset: 0;
   display: flex;
@@ -180,29 +199,50 @@ canvas#game {
   z-index: 10;
 }
 
-#overlay.hidden {
+#overlay.hidden,
+#onboard.hidden {
   display: none;
 }
 
-#overlay .panel {
+#overlay .panel,
+#onboard .panel {
   padding: 18px 28px;
   text-align: center;
   min-width: 280px;
+  max-width: 360px;
 }
 
-#overlay h1 {
+#overlay h1,
+#onboard h1 {
   margin: 0 0 10px;
   font-size: 18px;
   color: #8e2f2c;
 }
 
-#overlay p {
+#overlay p,
+#onboard p {
   margin: 4px 0;
   font-size: 12px;
 }
 
-#overlay button {
+#overlay button,
+#overlay .btn-link,
+#onboard button,
+#onboard .btn-link {
   margin-top: 14px;
   font-size: 13px;
   padding: 5px 18px;
+}
+
+#onboard .actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#onboard .star-badge {
+  margin-top: 14px;
+  height: 20px;
 }

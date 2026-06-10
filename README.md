@@ -15,6 +15,10 @@ procedurally on a chunky low-res canvas, the way nature intended in 1999.
 
 ## 🕹 Play it
 
+Play online: **https://pyrou.github.io/tinytraffictown/**
+
+Or run it locally:
+
 ```bash
 npm install
 npm run dev
@@ -22,6 +26,14 @@ npm run dev
 
 Open the URL Vite prints (default: http://localhost:5173). That's it.
 The interface speaks both **French and English** — hit the FR/EN button to switch.
+
+On first launch, a welcome screen explains the basics — hit "Play" to dismiss it
+(it won't come back), or click the title bar any time to bring it back.
+
+## 🔗 Sharing your map
+
+Hit **Share** to copy a link containing your current road network and buildings —
+send it to a friend and they'll start a fresh game on your layout.
 
 ## 📦 How it works
 
@@ -35,6 +47,8 @@ The interface speaks both **French and English** — hit the FR/EN button to swi
   always grows more houses than businesses — but the orders never stop.
 - **Bikes** wander from house to house just to get in everyone's way. They ride at
   75% speed and you can't overtake them. You will learn to hate them. Lovingly.
+- The map is dotted with decorative **trees** — building a road or a building on
+  one cuts it down for good.
 
 ## 🛣 Roads with altitude (the RCT way)
 
@@ -82,6 +96,12 @@ or unleash an extra bike on the populace.
 Best score, options (camera rotation, speed, language) and your **game in progress**
 live in `localStorage`. Close the tab mid-game; it'll be there when you come back.
 "New game" wipes the slate.
+
+## 🚀 Deployment
+
+Every push to `main` runs a GitHub Actions workflow
+(`.github/workflows/deploy.yml`) that builds the project and publishes `dist/`
+to GitHub Pages at `https://pyrou.github.io/tinytraffictown/`.
 
 ## 🏗 Under the hood
 

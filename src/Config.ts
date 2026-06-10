@@ -47,10 +47,19 @@ export const Config = {
   UNLOCK_EVERY: 5, // nouveaux spawns avant de débloquer une couleur
   HOUSE_SURPLUS: 2, // maisons d'avance requises (par couleur) avant une entreprise
 
+  // --- Quartiers (placement des maisons) ---
+  HOOD_JOIN_CHANCE: 0.75, // probabilité de rejoindre un quartier existant
+  HOOD_JOIN_DIST: 3, // distance Manhattan max (blocs) à une maison de même couleur
+  HOOD_NEW_DIST: 10, // distance Manhattan min stricte pour fonder un nouveau quartier
+  ROAD_SPOT_CHANCE: 0.5, // probabilité de privilégier un spawn collé à une route plate niveau 0
+
   // --- Rivière ---
   RIVER_BRIDGE_LEVEL: 1, // niveau minimum d'une route au-dessus de l'eau (pont)
   RIVER_MAX_OFFSET: 2, // écart max (cases) du lit par rapport au centre de la carte
   RIVER_WANDER: 0.45, // probabilité que le lit fasse un coude à chaque rangée
+
+  // --- Arbres ---
+  TREE_DENSITY: 0.07, // probabilité d'arbre par case d'herbe à la génération
 
   // --- Divers ---
   AUTOSAVE_INTERVAL: 5,
@@ -59,4 +68,7 @@ export const Config = {
   // Palette des quartiers / entreprises
   COLORS: ["#d9534f", "#4f7dd9", "#53b86b", "#e0a23e", "#9a5fd0", "#3fb8c4"],
   COLORS_DARK: ["#8e2f2c", "#2c4f95", "#2f7a44", "#9c6a1d", "#643a8e", "#22787f"],
+
+  // --- Liens ---
+  GITHUB_URL: "https://github.com/pyrou/tinytraffictown",
 };

@@ -15,6 +15,8 @@ const fr = {
   langTip: "Switch to English",
   newGame: "Nouvelle partie",
   newGameTip: "Recommencer à zéro",
+  shareBtn: "Partager",
+  shareTip: "Copier un lien de partage de la carte",
   statScore: "Score {n}",
   statBest: "Record {n}",
   statPayout: "Subvention +{a} dans {s}s",
@@ -70,6 +72,16 @@ const fr = {
   overBest: "Meilleur score : {n}",
   replay: "Rejouer",
   replayTip: "Nouvelle partie",
+  starGithub: "⭐ Star sur GitHub",
+  starGithubTip: "Ouvrir le dépôt sur GitHub",
+
+  // Écran d'accueil
+  onboardTitle: "TINY TRAFFIC TOWN",
+  onboardText:
+    "Construisez des routes pour relier les maisons aux entreprises de même " +
+    "couleur. Livrez les commandes avant que la jauge de danger ne déborde !",
+  startPlaying: "▶ Jouer",
+  startPlayingTip: "Fermer cette fenêtre et commencer à jouer",
 
   // Messages de jeu
   msgWelcome: "Bienvenue ! Reliez les maisons aux entreprises de même couleur.",
@@ -86,6 +98,11 @@ const fr = {
   msgNo2x2: "Blocs de routes 2x2 interdits",
   msgNoWater: "Impossible de construire sur l'eau (pont au niveau 1 minimum)",
   msgNothingHere: "Rien à démolir ici",
+  msgTreeCut: "Arbre abattu",
+  msgShareCopied: "Lien de la carte copié dans le presse-papiers !",
+  msgMapLoaded: "Carte partagée chargée !",
+  msgMapInvalid: "Lien de carte invalide",
+  msgMapVersion: "Carte créée avec une version plus récente du jeu",
 
   // Messages de debug
   dbgHouseAdded: "[debug] Maison ajoutée",
@@ -111,6 +128,8 @@ const en: Record<StringKey, string> = {
   langTip: "Passer en français",
   newGame: "New game",
   newGameTip: "Start over",
+  shareBtn: "Share",
+  shareTip: "Copy a shareable link to this map",
   statScore: "Score {n}",
   statBest: "Best {n}",
   statPayout: "Grant +{a} in {s}s",
@@ -162,6 +181,15 @@ const en: Record<StringKey, string> = {
   overBest: "Best score: {n}",
   replay: "Play again",
   replayTip: "New game",
+  starGithub: "⭐ Star on GitHub",
+  starGithubTip: "Open the repository on GitHub",
+
+  onboardTitle: "TINY TRAFFIC TOWN",
+  onboardText:
+    "Build roads to connect houses to businesses of the same color. " +
+    "Deliver orders before the danger gauge fills up!",
+  startPlaying: "▶ Play",
+  startPlayingTip: "Close this window and start playing",
 
   msgWelcome: "Welcome! Connect houses to businesses of the same color.",
   msgRestored: "Previous game restored.",
@@ -177,6 +205,11 @@ const en: Record<StringKey, string> = {
   msgNo2x2: "2x2 road blocks are forbidden",
   msgNoWater: "Can't build on water (bridge at level 1 minimum)",
   msgNothingHere: "Nothing to demolish here",
+  msgTreeCut: "Tree cut down",
+  msgShareCopied: "Map link copied to clipboard!",
+  msgMapLoaded: "Shared map loaded!",
+  msgMapInvalid: "Invalid map link",
+  msgMapVersion: "Map made with a newer version of the game",
 
   dbgHouseAdded: "[debug] House added",
   dbgBizAdded: "[debug] Business added",
