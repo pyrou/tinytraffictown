@@ -215,6 +215,28 @@ canvas#game {
   outline: 1px solid #1a1a1a;
 }
 
+#options-menu {
+  position: absolute;
+  top: 48px;
+  right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  min-width: 140px;
+}
+
+#options-menu.hidden {
+  display: none;
+}
+
+#options-menu .menu-item {
+  text-align: left;
+  padding: 3px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 #overlay,
 #onboard {
   position: absolute;

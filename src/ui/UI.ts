@@ -2,7 +2,6 @@ import { Config } from "../Config";
 import type { Game } from "../Game";
 import { getLang, t } from "../i18n";
 import type { StringKey } from "../i18n";
-import { hasSeenOnboarding, markOnboardingSeen } from "../storage/Storage";
 
 // Élément traduisible : ré-appliqué à chaque changement de langue.
 interface TrEntry {
@@ -25,6 +24,8 @@ export class UI {
   private btnSpeed!: HTMLButtonElement;
   private btnLang!: HTMLButtonElement;
   private toolButtons = new Map<string, HTMLButtonElement>();
+  private optionsMenu!: HTMLElement;
+  private optionsBtn!: HTMLButtonElement;
   private elLevel!: HTMLElement;
   private btnDir!: HTMLButtonElement;
   private elStatus!: HTMLElement;
@@ -109,14 +110,19 @@ export class UI {
       this.game.setSpeed(this.game.speed === 1 ? 2 : 1),
     );
     this.btnLang = this.btn(null, "langTip", () => this.game.toggleLang());
+
+    this.optionsBtn = this.btn("optionsBtn", "optionsBtnTip", () => this.toggleOptionsMenu());
+    this.optionsMenu = document.createElement("div");
+    this.optionsMenu.id = "options-menu";
+    this.optionsMenu.className = "panel hidden";
+    this.buildOptionsMenu();
+
     top.append(
       this.btnPause,
       this.btnSpeed,
       this.btn(null, "rotLeftTip", () => this.game.rotate(-1)),
       this.btn(null, "rotRightTip", () => this.game.rotate(1)),
-      this.btn(null, "debugTip", () => this.debugPanel.classList.toggle("hidden")),
-      this.btnLang,
-      this.btn("helpBtn", "helpBtnTip", () => this.showHelp()),
+      this.optionsBtn,
       this.btn("shareBtn", "shareTip", () => this.game.shareMap()),
       this.btn("newGame", "newGameTip", () => this.game.newGame()),
     );
@@ -124,8 +130,8 @@ export class UI {
     const rotBtns = top.querySelectorAll("button");
     rotBtns[2].textContent = "⟲";
     rotBtns[3].textContent = "⟳";
-    rotBtns[4].textContent = "🐞";
     root.appendChild(top);
+    root.appendChild(this.optionsMenu);
 
     // --- menu de debug ---
     this.debugPanel = document.createElement("div");
@@ -268,7 +274,6 @@ export class UI {
     // --- écran d'accueil ---
     this.onboard = document.createElement("div");
     this.onboard.id = "onboard";
-    if (hasSeenOnboarding()) this.onboard.classList.add("hidden");
     const oPanel = document.createElement("div");
     oPanel.className = "panel";
     const oClose = this.btn(null, "closeOnboardingTip", () => this.hideOnboarding());
@@ -295,9 +300,55 @@ export class UI {
     root.appendChild(this.onboard);
   }
 
+  private buildOptionsMenu(): void {
+    this.optionsMenu.innerHTML = "";
+
+    const createMenuBtn = (text: StringKey, onClick: () => void) => {
+      const item = document.createElement("button");
+      item.className = "menu-item";
+      this.reg({ el: item, text });
+      item.addEventListener("click", () => {
+        onClick();
+        this.hideOptionsMenu();
+      });
+      return item;
+    };
+
+    this.optionsMenu.appendChild(createMenuBtn("optionsHelp", () => {
+      this.showHelp();
+    }));
+
+    this.optionsMenu.appendChild(createMenuBtn("optionsDebug", () => {
+      this.debugPanel.classList.toggle("hidden");
+    }));
+
+    this.optionsMenu.appendChild(createMenuBtn("optionsLanguage", () => {
+      this.game.toggleLang();
+    }));
+
+    this.optionsMenu.appendChild(createMenuBtn("optionsMusic", () => {
+      this.game.toggleMusic();
+    }));
+
+    this.optionsMenu.appendChild(createMenuBtn("optionsAudio", () => {
+      this.game.toggleSfx();
+    }));
+  }
+
+  private toggleOptionsMenu(): void {
+    this.optionsMenu.classList.toggle("hidden");
+  }
+
+  private hideOptionsMenu(): void {
+    this.optionsMenu.classList.add("hidden");
+  }
+
   private hideOnboarding(): void {
     this.onboard.classList.add("hidden");
-    markOnboardingSeen();
+  }
+
+  showOnboarding(): void {
+    this.onboard.classList.remove("hidden");
   }
 
   private hideHelp(): void {
@@ -306,10 +357,6 @@ export class UI {
 
   private showHelp(): void {
     this.helpPanel.classList.remove("hidden");
-  }
-
-  private showOnboarding(): void {
-    this.onboard.classList.remove("hidden");
   }
 
   // Ré-applique tous les textes traduits (appelé au changement de langue).

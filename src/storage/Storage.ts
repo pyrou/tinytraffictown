@@ -9,6 +9,8 @@ export interface Options {
   rotation: number;
   speed: number;
   lang: "fr" | "en" | null;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
 }
 
 export function loadBest(): number {
@@ -36,12 +38,14 @@ export function loadOptions(): Options {
         rotation: o.rotation % 4 || 0,
         speed: o.speed === 2 ? 2 : 1,
         lang: o.lang === "fr" || o.lang === "en" ? o.lang : null,
+        musicEnabled: o.musicEnabled !== false,
+        sfxEnabled: o.sfxEnabled !== false,
       };
     }
   } catch {
     /* ignore */
   }
-  return { rotation: 0, speed: 1, lang: null };
+  return { rotation: 0, speed: 1, lang: null, musicEnabled: true, sfxEnabled: true };
 }
 
 export function saveOptions(o: Options): void {

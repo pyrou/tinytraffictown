@@ -64,6 +64,7 @@ export class Simulation {
   nextId = 1;
 
   onMessage: ((msg: string) => void) | null = null;
+  onBuildingSpawned: (() => void) | null = null;
 
   constructor(fresh = true) {
     if (fresh) this.initStart();
@@ -690,6 +691,7 @@ export class Simulation {
       this.onMessage?.(t("msgNewColor"));
     }
     this.onMessage?.(t(type === "house" ? "msgNewHouse" : "msgNewBiz"));
+    this.onBuildingSpawned?.();
   }
 
   // Tous les emplacements constructibles : loin du bord, hors eau/routes,

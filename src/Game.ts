@@ -15,12 +15,14 @@ import {
 } from "./storage/Storage";
 import { decodeMap, encodeMap } from "./storage/MapCode";
 import { UI } from "./ui/UI";
+import { AudioManager } from "./audio/AudioManager";
 
 export class Game {
   sim: Simulation;
   renderer: Renderer;
   input: Input;
   ui: UI;
+  audio: AudioManager;
 
   paused = false;
   speed: 1 | 2 = 1;
@@ -31,12 +33,17 @@ export class Game {
   private autosaveTimer = Config.AUTOSAVE_INTERVAL;
   private lastTime = 0;
   private gameOverShown = false;
+  private musicStarted = false;
 
   constructor(root: HTMLElement) {
     this.best = loadBest();
 
     const opts = loadOptions();
     setLang(opts.lang ?? (navigator.language.startsWith("fr") ? "fr" : "en"));
+
+    this.audio = new AudioManager();
+    this.audio.setMusicEnabled(opts.musicEnabled);
+    this.audio.setSfxEnabled(opts.sfxEnabled);
 
     const canvas = document.createElement("canvas");
     canvas.id = "game";
@@ -47,6 +54,7 @@ export class Game {
     const save = shared.sim ? null : loadGame();
     this.sim = shared.sim ?? (save ? Simulation.fromSave(save) : new Simulation());
     this.sim.onMessage = (m) => this.setMessage(m);
+    this.sim.onBuildingSpawned = () => this.audio.playBuildingSound();
 
     this.renderer = new Renderer(canvas);
     this.renderer.rot = opts.rotation;
@@ -57,6 +65,7 @@ export class Game {
 
     this.setMessage(shared.msg ?? t(save ? "msgRestored" : "msgWelcome"));
 
+    canvas.addEventListener("click", () => this.startMusic(), { once: true });
     window.addEventListener("beforeunload", () => this.autosave());
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.autosave();
@@ -64,6 +73,13 @@ export class Game {
 
     this.lastTime = performance.now();
     requestAnimationFrame((t) => this.loop(t));
+  }
+
+  private startMusic(): void {
+    if (!this.musicStarted) {
+      this.musicStarted = true;
+      this.audio.playBackgroundMusic();
+    }
   }
 
   private loop(t: number): void {
@@ -132,6 +148,20 @@ export class Game {
     this.ui.applyTexts();
   }
 
+  toggleMusic(): void {
+    const enabled = !this.audio.isMusicEnabled();
+    this.audio.setMusicEnabled(enabled);
+    if (enabled) this.audio.playBackgroundMusic();
+    else this.audio.stopBackgroundMusic();
+    this.saveOpts();
+  }
+
+  toggleSfx(): void {
+    const enabled = !this.audio.isSfxEnabled();
+    this.audio.setSfxEnabled(enabled);
+    this.saveOpts();
+  }
+
   // Lit une carte partagée dans le fragment d'URL, puis l'efface aussitôt :
   // un refresh recharge la partie autosauvegardée, pas le snapshot partagé.
   private loadSharedMap(): { sim: Simulation | null; msg: string | null } {
@@ -162,9 +192,11 @@ export class Game {
     clearGame();
     this.sim = new Simulation();
     this.sim.onMessage = (m) => this.setMessage(m);
+    this.sim.onBuildingSpawned = () => this.audio.playBuildingSound();
     this.gameOverShown = false;
     this.paused = false;
     this.ui.hideGameOver();
+    this.ui.showOnboarding();
     this.setMessage(t("msgNewGame"));
   }
 
@@ -207,7 +239,13 @@ export class Game {
   }
 
   private saveOpts(): void {
-    saveOptions({ rotation: this.renderer.rot, speed: this.speed, lang: getLang() });
+    saveOptions({
+      rotation: this.renderer.rot,
+      speed: this.speed,
+      lang: getLang(),
+      musicEnabled: this.audio.isMusicEnabled(),
+      sfxEnabled: this.audio.isSfxEnabled(),
+    });
   }
 
   private onGameOver(): void {
