@@ -34,6 +34,8 @@ export class UI {
   private onboard!: HTMLElement;
   private elFinalScore!: HTMLElement;
   private elFinalBest!: HTMLElement;
+  private btnShareX!: HTMLAnchorElement;
+  private btnShareBsky!: HTMLAnchorElement;
 
   constructor(root: HTMLElement, game: Game) {
     this.game = game;
@@ -244,8 +246,15 @@ export class UI {
     this.elFinalScore = document.createElement("p");
     this.elFinalBest = document.createElement("p");
     const replay = this.btn("replay", "replayTip", () => this.game.newGame());
+    const overActions = document.createElement("div");
+    overActions.className = "actions";
     const overStar = this.linkBtn("starGithub", "starGithubTip", Config.GITHUB_URL);
-    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, replay, overStar);
+    // Liens de partage social : la cible (href) est fixée dans showGameOver,
+    // une fois le score final connu.
+    this.btnShareX = this.linkBtn("shareX", "shareXTip", "#");
+    this.btnShareBsky = this.linkBtn("shareBluesky", "shareBlueskyTip", "#");
+    overActions.append(replay, overStar, this.btnShareX, this.btnShareBsky);
+    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, overActions);
     this.overlay.appendChild(panel);
     root.appendChild(this.overlay);
 
@@ -321,6 +330,9 @@ export class UI {
   showGameOver(score: number, best: number): void {
     this.elFinalScore.textContent = t("overScore", { n: score });
     this.elFinalBest.textContent = t("overBest", { n: best });
+    const msg = encodeURIComponent(t("shareScore", { n: score, url: Config.GAME_URL }));
+    this.btnShareX.href = `https://x.com/intent/post?text=${msg}`;
+    this.btnShareBsky.href = `https://bsky.app/intent/compose?text=${msg}`;
     this.overlay.classList.remove("hidden");
   }
 

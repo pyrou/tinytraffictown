@@ -75,6 +75,12 @@ const fr = {
   replayTip: "Nouvelle partie",
   starGithub: "⭐ Star sur GitHub",
   starGithubTip: "Ouvrir le dépôt sur GitHub",
+  shareX: "Partager sur X",
+  shareXTip: "Publier votre score sur X",
+  shareBluesky: "Partager sur Bluesky",
+  shareBlueskyTip: "Publier votre score sur Bluesky",
+  shareScore:
+    "Battez mon score de {n} sur TinyTrafficTown, un petit jeu codé en une heure par #Claude #Fable 5. {url}",
 
   // Écran d'accueil
   onboardTitle: "TINY TRAFFIC TOWN",
@@ -186,6 +192,12 @@ const en: Record<StringKey, string> = {
   replayTip: "New game",
   starGithub: "⭐ Star on GitHub",
   starGithubTip: "Open the repository on GitHub",
+  shareX: "Share on X",
+  shareXTip: "Post your score on X",
+  shareBluesky: "Share on Bluesky",
+  shareBlueskyTip: "Post your score on Bluesky",
+  shareScore:
+    "Beat my {n} score on TinyTrafficTown, a little game done in one hour by #Claude #Fable 5. {url}",
 
   onboardTitle: "TINY TRAFFIC TOWN",
   onboardText:
