@@ -7,6 +7,8 @@ export const Config = {
   Z_STEP: 7, // pixels par niveau de hauteur
   MAX_LEVEL: 4, // hauteur maximum des routes
   RENDER_SCALE: 2, // upscale pixelisé du canvas
+  EARTH_DEPTH: 16, // hauteur (px basse résolution) des faces de terre des blocs de bord
+  WATERFALL_BLOCKS: 6, // longueur du fondu des cascades, en blocs de terre
 
   // --- Économie ---
   START_CREDITS: 300,
@@ -47,6 +49,12 @@ export const Config = {
   UNLOCK_EVERY: 5, // nouveaux spawns avant de débloquer une couleur
   HOUSE_SURPLUS: 2, // maisons d'avance requises (par couleur) avant une entreprise
 
+  // --- Animation d'apparition des entreprises ---
+  BIZ_FALL_HEIGHT: 16, // hauteur de départ de la chute (en niveaux Z_STEP)
+  BIZ_FALL_SPEED: 26, // vitesse de chute constante (niveaux par seconde)
+  IMPACT_RING_TIME: 0.7, // durée de l'onde de choc au sol (s)
+  IMPACT_RING_RADIUS: 3.5, // rayon final de l'onde (cases)
+
   // --- Quartiers (placement des maisons) ---
   HOOD_JOIN_CHANCE: 0.75, // probabilité de rejoindre un quartier existant
   HOOD_JOIN_DIST: 3, // distance Manhattan max (blocs) à une maison de même couleur
@@ -74,3 +82,76 @@ export const Config = {
   GITHUB_URL: "https://github.com/pyrou/tinytraffictown",
   GAME_URL: "https://pyrou.github.io/tinytraffictown/", // page de jeu (partage social)
 };
+
+// ---------------------------------------------------------------------------
+// Personnalisation de la Config (sidebar debug).
+//
+// Les overrides sont persistés dans localStorage et appliqués ICI, à
+// l'évaluation de ce module : Config.ts est à la base du graphe d'imports,
+// donc les constantes dérivées des autres modules (ex. TW2/TH2/Z du Renderer,
+// figées au chargement) voient déjà les valeurs personnalisées. C'est pour
+// cette raison que la lecture/écriture localStorage vit ici et non dans
+// storage/Storage.ts.
+// ---------------------------------------------------------------------------
+
+type ConfigShape = typeof Config;
+
+// Clés numériques de la Config (les seules personnalisables via le menu debug).
+export type ConfigNumKey = {
+  [K in keyof ConfigShape]: ConfigShape[K] extends number ? K : never;
+}[keyof ConfigShape];
+
+// Valeurs d'usine, figées avant application des overrides (comparaison/reset).
+export const CONFIG_DEFAULTS: Readonly<ConfigShape> = Object.freeze({ ...Config });
+
+export const CONFIG_NUM_KEYS = (Object.keys(Config) as (keyof ConfigShape)[]).filter(
+  (k): k is ConfigNumKey => typeof Config[k] === "number",
+);
+
+const KEY_CFG = "ttt_cfg";
+
+// Sauvegarde uniquement le diff par rapport aux défauts (clé supprimée si vide).
+function persistOverrides(): void {
+  try {
+    const o: Partial<Record<ConfigNumKey, number>> = {};
+    for (const k of CONFIG_NUM_KEYS) if (Config[k] !== CONFIG_DEFAULTS[k]) o[k] = Config[k];
+    if (Object.keys(o).length) localStorage.setItem(KEY_CFG, JSON.stringify(o));
+    else localStorage.removeItem(KEY_CFG);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+
+export function isConfigCustom(k: ConfigNumKey): boolean {
+  return Config[k] !== CONFIG_DEFAULTS[k];
+}
+
+export function setConfigValue(k: ConfigNumKey, v: number): void {
+  Config[k] = v;
+  persistOverrides();
+}
+
+export function resetConfigValue(k: ConfigNumKey): void {
+  Config[k] = CONFIG_DEFAULTS[k];
+  persistOverrides();
+}
+
+export function resetAllConfig(): void {
+  for (const k of CONFIG_NUM_KEYS) Config[k] = CONFIG_DEFAULTS[k];
+  persistOverrides();
+}
+
+// Application des overrides sauvegardés (tolérant aux données invalides).
+(() => {
+  try {
+    const raw = localStorage.getItem(KEY_CFG);
+    if (!raw) return;
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    for (const k of CONFIG_NUM_KEYS) {
+      const v = o[k];
+      if (typeof v === "number" && Number.isFinite(v)) Config[k] = v;
+    }
+  } catch {
+    /* données invalides : on garde les défauts */
+  }
+})();

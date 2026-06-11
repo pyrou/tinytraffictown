@@ -211,6 +211,14 @@ export class Game {
 
   // ---- menu de debug ----
 
+  // Appelé après modification d'un paramètre de Config via la sidebar debug :
+  // applique les effets immédiats (RENDER_SCALE → taille du canvas). Le reste
+  // est lu en continu par la sim/le rendu, ou signalé « nouvelle partie /
+  // rechargement requis » dans l'infobulle du paramètre.
+  onConfigChanged(): void {
+    this.renderer.resize();
+  }
+
   debugSpawnBuilding(type: "house" | "biz", color: number): void {
     const ok = this.sim.debugSpawnBuilding(type, color);
     this.setMessage(t(ok ? (type === "house" ? "dbgHouseAdded" : "dbgBizAdded") : "dbgNoSpot"));

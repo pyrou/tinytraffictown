@@ -1,4 +1,13 @@
-import { Config } from "../Config";
+import {
+  Config,
+  CONFIG_DEFAULTS,
+  CONFIG_NUM_KEYS,
+  isConfigCustom,
+  resetAllConfig,
+  resetConfigValue,
+  setConfigValue,
+} from "../Config";
+import type { ConfigNumKey } from "../Config";
 import type { Game } from "../Game";
 import { getLang, t } from "../i18n";
 import type { StringKey } from "../i18n";
@@ -12,6 +21,86 @@ interface TrEntry {
   title?: StringKey;
   titleArgs?: Record<string, string | number>;
 }
+
+// Sections de la sidebar de config (mêmes regroupements que Config.ts).
+const CFG_SECTIONS: [StringKey, ConfigNumKey[]][] = [
+  ["cfgSecGrid", ["GRID", "TILE_W", "TILE_H", "Z_STEP", "MAX_LEVEL", "RENDER_SCALE"]],
+  [
+    "cfgSecEco",
+    [
+      "START_CREDITS",
+      "COST_ROAD",
+      "COST_RAMP",
+      "COST_PER_LEVEL",
+      "PAYOUT_INTERVAL",
+      "PAYOUT_AMOUNT",
+      "DELIVERY_CREDITS",
+      "DELIVERY_SCORE",
+    ],
+  ],
+  [
+    "cfgSecOrders",
+    [
+      "ORDER_INTERVAL",
+      "ORDER_MIN_FACTOR",
+      "DIFFICULTY_RAMP_TIME",
+      "DANGER_THRESHOLD",
+      "DANGER_FILL_TIME",
+      "DANGER_DECAY_TIME",
+      "MAX_ORDER_PIPS",
+    ],
+  ],
+  [
+    "cfgSecCars",
+    [
+      "CAR_SPEED",
+      "CARS_PER_HOUSE",
+      "DISPATCH_INTERVAL",
+      "LANE_OFFSET",
+      "YIELD_STOP_TIME",
+      "YIELD_DEADLOCK_TIME",
+    ],
+  ],
+  ["cfgSecBikes", ["BIKE_SPEED_FACTOR", "BIKE_INTERVAL", "BIKE_MAX"]],
+  [
+    "cfgSecSpawn",
+    [
+      "SPAWN_INTERVAL_START",
+      "SPAWN_INTERVAL_MIN",
+      "SPAWN_ACCEL_TIME",
+      "UNLOCK_EVERY",
+      "HOUSE_SURPLUS",
+    ],
+  ],
+  ["cfgSecAnim", ["BIZ_FALL_HEIGHT", "BIZ_FALL_SPEED", "IMPACT_RING_TIME", "IMPACT_RING_RADIUS"]],
+  ["cfgSecHoods", ["HOOD_JOIN_CHANCE", "HOOD_JOIN_DIST", "HOOD_NEW_DIST", "ROAD_SPOT_CHANCE"]],
+  ["cfgSecRiver", ["RIVER_BRIDGE_LEVEL", "RIVER_MAX_OFFSET", "RIVER_WANDER", "WATER_ANIM_FPS"]],
+  ["cfgSecTrees", ["TREE_DENSITY"]],
+  ["cfgSecMisc", ["AUTOSAVE_INTERVAL", "DEBUG_CREDITS"]],
+];
+
+// Filet de sécurité : toute nouvelle clé numérique non listée atterrit dans
+// « Divers » plutôt que de disparaître de la sidebar.
+{
+  const listed = new Set(CFG_SECTIONS.flatMap(([, keys]) => keys));
+  CFG_SECTIONS[CFG_SECTIONS.length - 1][1].push(
+    ...CONFIG_NUM_KEYS.filter((k) => !listed.has(k)),
+  );
+}
+
+// Paramètres qui ne peuvent pas prendre effet en cours de partie.
+const CFG_NOTES: Partial<Record<ConfigNumKey, StringKey>> = {
+  // Figés au chargement du module Renderer.
+  TILE_W: "cfgNoteReload",
+  TILE_H: "cfgNoteReload",
+  Z_STEP: "cfgNoteReload",
+  // Lus à la génération du monde / à l'initialisation de la partie.
+  GRID: "cfgNoteNewGame",
+  START_CREDITS: "cfgNoteNewGame",
+  RIVER_MAX_OFFSET: "cfgNoteNewGame",
+  RIVER_WANDER: "cfgNoteNewGame",
+  TREE_DENSITY: "cfgNoteNewGame",
+};
 
 export class UI {
   private game: Game;
@@ -35,6 +124,13 @@ export class UI {
   private helpPanel!: HTMLElement;
   private debugPanel!: HTMLElement;
   private debugColor = 0;
+  private moneyEntry!: TrEntry;
+  private cfgRows: {
+    key: ConfigNumKey;
+    row: HTMLElement;
+    input: HTMLInputElement;
+    rst: HTMLButtonElement;
+  }[] = [];
   private overlay!: HTMLElement;
   private onboard!: HTMLElement;
   private elFinalScore!: HTMLElement;
@@ -180,13 +276,15 @@ export class UI {
     );
     this.debugPanel.appendChild(this.btn("debugBike", "debugBikeTip", () => this.game.debugSpawnBike()));
     const bMoney = this.btn(null, null, () => this.game.debugAddCredits());
-    this.reg({
+    // Entrée conservée : ses args sont rafraîchis quand DEBUG_CREDITS change.
+    this.moneyEntry = {
       el: bMoney,
       text: "debugMoney",
       textArgs: { n: Config.DEBUG_CREDITS },
       title: "debugMoneyTip",
       titleArgs: { n: Config.DEBUG_CREDITS },
-    });
+    };
+    this.registry.push(this.moneyEntry);
     this.debugPanel.appendChild(bMoney);
     this.debugPanel.appendChild(
       this.btn("debugPurge", "debugPurgeTip", () => this.game.debugClearOrders()),
@@ -194,6 +292,7 @@ export class UI {
     this.debugPanel.appendChild(
       this.btn("debugTraffic", "debugTrafficTip", () => this.game.debugClearTraffic()),
     );
+    this.buildConfigSection();
     root.appendChild(this.debugPanel);
 
     // --- barre d'outils ---
@@ -309,6 +408,79 @@ export class UI {
     root.appendChild(this.onboard);
   }
 
+  // Section « CONFIG » de la sidebar debug : édition de toutes les constantes
+  // numériques de Config.ts, persistées dans localStorage (ttt_cfg).
+  private buildConfigSection(): void {
+    const head = document.createElement("div");
+    head.className = "cfg-head";
+    const title = document.createElement("span");
+    title.className = "debug-title";
+    this.reg({ el: title, text: "cfgTitle" });
+    const resetAll = this.btn("cfgResetAll", "cfgResetAllTip", () => {
+      resetAllConfig();
+      this.onConfigEdited();
+    });
+    resetAll.className = "rst-all";
+    head.append(title, resetAll);
+    this.debugPanel.appendChild(head);
+
+    const list = document.createElement("div");
+    list.className = "cfg-list";
+    for (const [secKey, keys] of CFG_SECTIONS) {
+      const sec = document.createElement("div");
+      sec.className = "cfg-sec";
+      this.reg({ el: sec, text: secKey });
+      list.appendChild(sec);
+      for (const key of keys) list.appendChild(this.cfgRow(key));
+    }
+    this.debugPanel.appendChild(list);
+  }
+
+  private cfgRow(key: ConfigNumKey): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "cfg-row";
+    const name = document.createElement("span");
+    name.className = "cfg-name";
+    name.textContent = key;
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "any";
+    input.addEventListener("change", () => {
+      const v = Number(input.value);
+      if (input.value !== "" && Number.isFinite(v)) setConfigValue(key, v);
+      this.onConfigEdited();
+    });
+    const rst = document.createElement("button");
+    rst.className = "rst";
+    rst.textContent = "RST";
+    rst.addEventListener("click", () => {
+      resetConfigValue(key);
+      this.onConfigEdited();
+    });
+    row.append(name, input, rst);
+    this.cfgRows.push({ key, row, input, rst });
+    return row;
+  }
+
+  // Après toute édition : effets immédiats côté jeu, puis ré-application des
+  // libellés (lignes en gras, valeurs normalisées, boutons dépendants).
+  private onConfigEdited(): void {
+    this.game.onConfigChanged();
+    this.applyTexts();
+  }
+
+  private refreshCfgRows(): void {
+    for (const r of this.cfgRows) {
+      const custom = isConfigCustom(r.key);
+      r.row.classList.toggle("custom", custom);
+      const note = CFG_NOTES[r.key];
+      r.row.title = t(`cfg_${r.key}`) + (note ? `\n${t(note)}` : "");
+      r.rst.title = t("cfgRstTip", { v: CONFIG_DEFAULTS[r.key] });
+      r.rst.disabled = !custom;
+      if (document.activeElement !== r.input) r.input.value = String(Config[r.key]);
+    }
+  }
+
   private buildOptionsMenu(): void {
     this.optionsMenu.innerHTML = "";
 
@@ -386,6 +558,9 @@ export class UI {
 
   // Ré-applique tous les textes traduits (appelé au changement de langue).
   applyTexts(): void {
+    // DEBUG_CREDITS est éditable : on rafraîchit les args avant application.
+    this.moneyEntry.textArgs = { n: Config.DEBUG_CREDITS };
+    this.moneyEntry.titleArgs = { n: Config.DEBUG_CREDITS };
     for (const e of this.registry) {
       if (e.text) this.setText(e.el, t(e.text, e.textArgs));
       if (e.html) e.el.innerHTML = t(e.html);
@@ -395,6 +570,7 @@ export class UI {
     document.documentElement.lang = getLang();
     this.refreshOptionsLabels();
     this.refreshTools();
+    this.refreshCfgRows();
   }
 
   refreshTools(): void {

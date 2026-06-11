@@ -51,6 +51,10 @@ export class Simulation {
   buildings: Building[] = [];
   cars: Car[] = [];
 
+  // Ondes de choc au sol (atterrissage d'une entreprise) : âge en secondes,
+  // purgées après IMPACT_RING_TIME. État transitoire, jamais sauvegardé.
+  impacts: { x: number; y: number; age: number }[] = [];
+
   credits = Config.START_CREDITS;
   score = 0;
   elapsed = 0;
@@ -247,7 +251,24 @@ export class Simulation {
       this.spawnBike();
     }
 
+    this.updateSpawnFx(dt);
     this.moveCars(dt);
+  }
+
+  // Fait descendre les entreprises qui tombent du ciel (vitesse constante) et
+  // vieillit les ondes de choc. Le son d'apparition est joué à l'impact.
+  private updateSpawnFx(dt: number): void {
+    for (const b of this.buildings) {
+      if (b.fallZ === undefined) continue;
+      b.fallZ -= Config.BIZ_FALL_SPEED * dt;
+      if (b.fallZ <= 0) {
+        delete b.fallZ;
+        this.impacts.push({ x: b.x, y: b.y, age: 0 });
+        this.onBuildingSpawned?.();
+      }
+    }
+    for (const im of this.impacts) im.age += dt;
+    this.impacts = this.impacts.filter((im) => im.age < Config.IMPACT_RING_TIME);
   }
 
   // ------------------------------------------------------------------
@@ -681,7 +702,11 @@ export class Simulation {
 
     const spot = type === "house" ? this.findHouseSpot(color) : this.findSpot();
     if (!spot) return;
-    this.addBuilding(type, color, spot.x, spot.y);
+    const b = this.addBuilding(type, color, spot.x, spot.y);
+    // Une entreprise tombe du ciel : le son est joué à l'impact (updateSpawnFx),
+    // une maison apparaît sur place avec son son immédiat.
+    if (type === "biz") b.fallZ = Config.BIZ_FALL_HEIGHT;
+    else this.onBuildingSpawned?.();
     this.spawnCount++;
     if (
       this.spawnCount % Config.UNLOCK_EVERY === 0 &&
@@ -691,7 +716,6 @@ export class Simulation {
       this.onMessage?.(t("msgNewColor"));
     }
     this.onMessage?.(t(type === "house" ? "msgNewHouse" : "msgNewBiz"));
-    this.onBuildingSpawned?.();
   }
 
   // Tous les emplacements constructibles : loin du bord, hors eau/routes,
@@ -794,7 +818,8 @@ export class Simulation {
   debugSpawnBuilding(type: "house" | "biz", color: number): boolean {
     const spot = type === "house" ? this.findHouseSpot(color) : this.findSpot();
     if (!spot) return false;
-    this.addBuilding(type, color, spot.x, spot.y);
+    const b = this.addBuilding(type, color, spot.x, spot.y);
+    if (type === "biz") b.fallZ = Config.BIZ_FALL_HEIGHT;
     if (color >= this.unlockedColors) this.unlockedColors = color + 1;
     return true;
   }
@@ -820,7 +845,8 @@ export class Simulation {
       pieces,
       river,
       trees,
-      buildings: this.buildings.map((b) => ({ ...b, assigned: 0, activeCars: 0 })),
+      // fallZ posé au sol d'office : une partie restaurée ne rejoue pas la chute.
+      buildings: this.buildings.map((b) => ({ ...b, assigned: 0, activeCars: 0, fallZ: undefined })),
       credits: this.credits,
       score: this.score,
       elapsed: this.elapsed,

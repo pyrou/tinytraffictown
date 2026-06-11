@@ -128,20 +128,64 @@ export class Renderer {
     const drawables: Drawable[] = [];
     const size = sim.grid.size;
     const waterFrame = Math.floor((performance.now() / 1000) * Config.WATER_ANIM_FPS);
+    // Hauteur maximale dépassant sous une tuile de bord (faces de terre +
+    // cascade) : sert à élargir le culling vertical de ces seules tuiles.
+    const edgeOverhang = Config.EARTH_DEPTH * (Config.WATERFALL_BLOCKS + 1);
 
     for (let x = 0; x < size; x++) {
       for (let y = 0; y < size; y++) {
         const [rx, ry] = this.rotPoint(x, y);
         const base = (rx + ry) * 16;
         const [cx, cy] = this.project(x, y, 0);
-        if (cx < -TW2 || cx > this.canvas.width + TW2 || cy < -40 || cy > this.canvas.height + 60) {
+        const cell = sim.grid.cell(x, y);
+        // Seuls les deux bords de la carte tournés vers la caméra exposent
+        // leurs faces latérales : la colonne rx max (face droite) et la
+        // rangée ry max (face gauche). Partout ailleurs, la tuile voisine
+        // les masquerait entièrement — on ne les dessine donc jamais.
+        const faceR = rx === size - 1;
+        const faceL = ry === size - 1;
+        // Sortie de rivière sur un bord arrière : la cascade tombe derrière
+        // la carte (clé de tri minimale, peinte sous tout le reste). On n'en
+        // voit la face intérieure que si le fondu est assez long pour
+        // dépasser sous la silhouette de la carte.
+        const backR = cell.river && ry === 0;
+        const backL = cell.river && rx === 0;
+        if (
+          cx < -TW2 ||
+          cx > this.canvas.width + TW2 ||
+          cy < -40 - (faceL || faceR || backL || backR ? edgeOverhang : 0) ||
+          cy > this.canvas.height + 60
+        ) {
           continue;
         }
-        const cell = sim.grid.cell(x, y);
+        if (backL || backR) {
+          const hb = this.cellHash(x, y);
+          drawables.push({
+            key: base - 1e6,
+            draw: () => {
+              if (backL) this.drawWaterfall(cx - TW2, cy, cx, cy - TH2, hb, waterFrame, true);
+              if (backR) this.drawWaterfall(cx, cy - TH2, cx + TW2, cy, hb, waterFrame, true);
+            },
+          });
+        }
         drawables.push({
           key: base - 1,
-          draw: () => this.drawGround(cx, cy, x, y, cell.river, waterFrame),
+          draw: () => this.drawGround(cx, cy, x, y, cell.river, waterFrame, faceL, faceR),
         });
+        // Onde de choc d'un atterrissage : anneau blanc qui s'élargit et
+        // s'estompe, rendu en teintant le losange de sol case par case.
+        for (const im of sim.impacts) {
+          const a = this.impactAlpha(im, x, y);
+          if (a <= 0) continue;
+          drawables.push({
+            key: base - 0.5,
+            draw: () => {
+              g.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+              this.diamondPath(cx, cy, 0, [0, 0, 0, 0]);
+              g.fill();
+            },
+          });
+        }
         for (const p of cell.pieces) {
           drawables.push({
             key: base + p.level * 2 + 0.1,
@@ -150,7 +194,11 @@ export class Renderer {
         }
         if (cell.building) {
           const b = cell.building;
-          drawables.push({ key: base + 0.5, draw: () => this.drawBuilding(cx, cy, b) });
+          // En chute, la clé suit la hauteur : le bâtiment passe devant les ponts.
+          drawables.push({
+            key: base + (b.fallZ ?? 0) * 2 + 0.5,
+            draw: () => this.drawBuilding(cx, cy, b),
+          });
         }
         if (cell.tree) {
           drawables.push({ key: base + 0.5, draw: () => this.drawTree(cx, cy, x, y) });
@@ -181,6 +229,11 @@ export class Renderer {
 
   // ---- sol ----
 
+  // Hachage déterministe d'une cellule (variations de teinte, mouchetis…).
+  private cellHash(gx: number, gy: number): number {
+    return (gx * 7349 + gy * 4271 + 131) % 97;
+  }
+
   private drawGround(
     cx: number,
     cy: number,
@@ -188,9 +241,14 @@ export class Renderer {
     gy: number,
     water: boolean,
     waterFrame: number,
+    faceL: boolean,
+    faceR: boolean,
   ): void {
     const g = this.ctx;
-    const h = (gx * 7349 + gy * 4271 + 131) % 97;
+    const h = this.cellHash(gx, gy);
+    // Faces latérales du bloc (avant le dessus, qui recouvre la jonction).
+    if (faceL) this.drawBlockFace(cx - TW2, cy, cx, cy + TH2, true, h, water, waterFrame);
+    if (faceR) this.drawBlockFace(cx, cy + TH2, cx + TW2, cy, false, h, water, waterFrame);
     if (water) {
       const blues = ["#3a6da3", "#3f74ab", "#35659a"];
       const wave = (waterFrame + h) % 6;
@@ -219,6 +277,115 @@ export class Renderer {
     g.fillStyle = "rgba(0,40,0,0.18)";
     g.fillRect(cx + ((h % 13) - 6), cy + ((h % 5) - 2), 1, 1);
     g.fillRect(cx + ((h % 19) - 9), cy + ((h % 7) - 3), 1, 1);
+  }
+
+  // Parallélogramme d'une face latérale : arête supérieure (x1,y1)->(x2,y2),
+  // décalée verticalement de dy0 (haut) à dy1 (bas).
+  private facePath(x1: number, y1: number, x2: number, y2: number, dy0: number, dy1: number): void {
+    const g = this.ctx;
+    g.beginPath();
+    g.moveTo(x1, y1 + dy0);
+    g.lineTo(x2, y2 + dy0);
+    g.lineTo(x2, y2 + dy1);
+    g.lineTo(x1, y1 + dy1);
+    g.closePath();
+  }
+
+  // Face latérale d'un bloc de bord, style "bloc d'herbe" : terre brune
+  // mouchetée surmontée d'un liseré d'herbe crénelé. La face gauche (left)
+  // est ombrée, la droite éclairée. Sur une case d'eau, la face devient une
+  // cascade qui plonge vers le néant.
+  private drawBlockFace(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    left: boolean,
+    h: number,
+    water: boolean,
+    waterFrame: number,
+  ): void {
+    if (water) {
+      this.drawWaterfall(x1, y1, x2, y2, h, waterFrame);
+      return;
+    }
+    const g = this.ctx;
+    const D = Config.EARTH_DEPTH;
+    // terre
+    g.fillStyle = left ? "#6b4c2e" : "#84603a";
+    this.facePath(x1, y1, x2, y2, 0, D);
+    g.fill();
+    // mouchetis (cailloux / terre sombre, déterministes par case)
+    g.fillStyle = left ? "#573d24" : "#6b4c2e";
+    for (let k = 0; k < 3; k++) {
+      const t = 0.15 + 0.28 * k + ((h >> k) % 3) * 0.04;
+      const px = Math.round(x1 + (x2 - x1) * t);
+      const py = Math.round(y1 + (y2 - y1) * t) + 6 + ((h >> (k + 2)) % (D - 9));
+      g.fillRect(px, py, 2, 1);
+    }
+    // liseré d'herbe en haut de la face
+    g.fillStyle = left ? "#4c7c38" : "#578a40";
+    this.facePath(x1, y1, x2, y2, 0, 3);
+    g.fill();
+    // crénelage du liseré (pixels d'herbe qui débordent sur la terre)
+    for (let k = 0; k < 4; k++) {
+      const t = 0.1 + 0.24 * k + ((h >> k) & 1) * 0.06;
+      const px = Math.round(x1 + (x2 - x1) * t);
+      const py = Math.round(y1 + (y2 - y1) * t) + 3;
+      g.fillRect(px, py, 2, 1);
+    }
+    // arête inférieure sombre (silhouette du bloc sur le vide)
+    g.strokeStyle = "rgba(0,0,0,0.35)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x1, y1 + D);
+    g.lineTo(x2, y2 + D);
+    g.stroke();
+  }
+
+  // Cascade au bord de la carte : l'eau tombe dans le vide et s'estompe en
+  // fondu sur WATERFALL_BLOCKS blocs (bandes d'opacité décroissante, plus
+  // filets d'écume animés qui descendent au rythme de waterFrame).
+  // inner : face intérieure d'une cascade de bord arrière, vue de dos à
+  // travers le vide sous la carte — teinte plus sombre, sans lèvre d'écume.
+  private drawWaterfall(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    h: number,
+    waterFrame: number,
+    inner = false,
+  ): void {
+    const g = this.ctx;
+    const D = Config.EARTH_DEPTH;
+    const N = Config.WATERFALL_BLOCKS;
+    const len = N * D;
+    const rgb = inner ? "43,82,120" : "63,116,171";
+    for (let i = 0; i < N; i++) {
+      const a = 0.85 * (1 - i / N);
+      g.fillStyle = `rgba(${rgb},${a.toFixed(3)})`;
+      this.facePath(x1, y1, x2, y2, i * D, (i + 1) * D);
+      g.fill();
+    }
+    // filets d'écume : descendent et s'effacent avec la chute
+    for (let k = 0; k < 4; k++) {
+      const t = 0.14 + 0.24 * k + ((h >> k) % 3) * 0.03;
+      const px = Math.round(x1 + (x2 - x1) * t);
+      const py = Math.round(y1 + (y2 - y1) * t);
+      const off = (waterFrame * 5 + k * 29 + h * 3) % len;
+      const a = (inner ? 0.45 : 0.7) * (1 - off / len);
+      g.fillStyle = `rgba(215,238,255,${a.toFixed(3)})`;
+      g.fillRect(px, py + off, 1, 6);
+    }
+    if (inner) return;
+    // écume au rebord (lèvre de la chute)
+    g.strokeStyle = "rgba(220,242,255,0.8)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(x1, y1 + 1);
+    g.lineTo(x2, y2 + 1);
+    g.stroke();
   }
 
   // ---- routes ----
@@ -347,8 +514,31 @@ export class Renderer {
   // ---- bâtiments ----
 
   private drawBuilding(cx: number, cy: number, b: Building): void {
-    if (b.type === "house") this.drawHouse(cx, cy, b);
-    else this.drawBiz(cx, cy, b);
+    if (b.type === "house") {
+      this.drawHouse(cx, cy, b);
+      return;
+    }
+    if (b.fallZ) {
+      // Entreprise en chute : la tuile d'arrivée entière s'assombrit (ombre
+      // "carrée" au sol), corps décalé en hauteur.
+      const g = this.ctx;
+      g.fillStyle = "rgba(0,0,0,0.22)";
+      this.diamondPath(cx, cy, 0, [0, 0, 0, 0]);
+      g.fill();
+      this.drawBiz(cx, cy - b.fallZ * Z, b, false);
+      return;
+    }
+    this.drawBiz(cx, cy, b);
+  }
+
+  // Opacité du voile blanc d'une onde de choc sur la case (x,y) : l'anneau
+  // a pour rayon t·IMPACT_RING_RADIUS et s'estompe linéairement.
+  private impactAlpha(im: { x: number; y: number; age: number }, x: number, y: number): number {
+    const t = im.age / Config.IMPACT_RING_TIME; // 0..1
+    const r = t * Config.IMPACT_RING_RADIUS;
+    const band = 1 - Math.abs(Math.hypot(x - im.x, y - im.y) - r) / 1.2;
+    if (band <= 0) return 0;
+    return 0.65 * (1 - t) * band;
   }
 
   // Boîte isométrique : empreinte en losange (demi-largeur hw, demi-hauteur hh),
@@ -471,7 +661,7 @@ export class Renderer {
     g.fillRect(cx - 6, cy - 4, 3, 3);
   }
 
-  private drawBiz(cx: number, cy: number, b: Building): void {
+  private drawBiz(cx: number, cy: number, b: Building, shadow = true): void {
     const g = this.ctx;
     const col = Config.COLORS[b.color];
     const dark = Config.COLORS_DARK[b.color];
@@ -479,11 +669,13 @@ export class Renderer {
     const hh = 6;
     const H = 15;
     const yT = cy - H;
-    // ombre portée
-    g.fillStyle = "rgba(0,0,0,0.22)";
-    g.beginPath();
-    g.ellipse(cx + 2, cy + 2, hw + 2, hh + 1, 0, 0, Math.PI * 2);
-    g.fill();
+    // ombre portée (omise en chute : elle reste au sol, voir drawBuilding)
+    if (shadow) {
+      g.fillStyle = "rgba(0,0,0,0.22)";
+      g.beginPath();
+      g.ellipse(cx + 2, cy + 2, hw + 2, hh + 1, 0, 0, Math.PI * 2);
+      g.fill();
+    }
     // corps + toit plat
     this.isoBox(cx, cy, hw, hh, H, "#9b968a", "#bdb8ab", "#aaa699");
     // enseigne colorée : bandeau en haut des deux faces

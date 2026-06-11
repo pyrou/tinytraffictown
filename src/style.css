@@ -175,15 +175,17 @@ canvas#game {
   font-weight: bold;
 }
 
+/* ---- sidebar de debug ---- */
 #debug {
   position: absolute;
   top: 48px;
   left: 6px;
+  bottom: 44px; /* laisse la barre d'outils visible */
   display: flex;
   flex-direction: column;
   gap: 5px;
   padding: 6px 8px;
-  width: 120px;
+  width: 252px;
 }
 
 #debug.hidden {
@@ -213,6 +215,135 @@ canvas#game {
 #debug .swatch.sel {
   border-color: #1a1a1a;
   outline: 1px solid #1a1a1a;
+}
+
+#debug .cfg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #6d6a64;
+  box-shadow: 0 1px 0 #ffffff inset;
+}
+
+#debug .rst-all {
+  font-size: 9px;
+  font-weight: bold;
+  min-width: 0;
+  padding: 1px 5px;
+  color: #6d2a26;
+}
+
+/* Liste défilante des paramètres (champ « enfoncé » Win9x) */
+#debug .cfg-list {
+  flex: 1;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: #e8e4dc;
+  border: 2px solid;
+  border-color: #6d6a64 #ffffff #ffffff #6d6a64;
+}
+
+/* Scrollbar rétro style RCT / Win9x : piste en damier, curseur biseauté */
+#debug .cfg-list::-webkit-scrollbar {
+  width: 14px;
+}
+
+#debug .cfg-list::-webkit-scrollbar-track {
+  background: #ffffff;
+  background-image: repeating-conic-gradient(#d4d0c8 0% 25%, #ffffff 0% 50%);
+  background-size: 4px 4px;
+}
+
+#debug .cfg-list::-webkit-scrollbar-thumb {
+  background: #d4d0c8;
+  border: 2px solid;
+  border-color: #ffffff #6d6a64 #6d6a64 #ffffff;
+}
+
+/* Navigateurs sans ::-webkit-scrollbar (Firefox) : teinte assortie */
+@supports not selector(::-webkit-scrollbar) {
+  #debug .cfg-list {
+    scrollbar-color: #b8b4ac #e8e4dc;
+  }
+}
+
+#debug .cfg-sec {
+  font-weight: bold;
+  color: #3a3530;
+  background: #c8c4bc;
+  padding: 2px 4px;
+  margin-top: 1px;
+  border-bottom: 1px solid #6d6a64;
+  letter-spacing: 0.5px;
+}
+
+#debug .cfg-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 3px;
+}
+
+#debug .cfg-row:hover {
+  background: #d8d4cc;
+}
+
+#debug .cfg-name {
+  flex: 1;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #2a2a2a;
+}
+
+/* Paramètre personnalisé : mis en avant */
+#debug .cfg-row.custom .cfg-name {
+  font-weight: bold;
+  color: #00007b;
+}
+
+#debug .cfg-row input {
+  width: 56px;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  padding: 1px 3px;
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #6d6a64 #ffffff #ffffff #6d6a64;
+  color: #1a1a1a;
+}
+
+#debug .cfg-row.custom input {
+  font-weight: bold;
+  color: #00007b;
+}
+
+/* Pas de spinners : on garde des champs compacts et rétro */
+#debug .cfg-row input::-webkit-outer-spin-button,
+#debug .cfg-row input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#debug .cfg-row input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#debug .cfg-row .rst {
+  min-width: 0;
+  padding: 0 2px;
+  font-size: 8px;
+  line-height: 11px;
+}
+
+#debug .cfg-row .rst:disabled {
+  color: #8a867e;
+  cursor: default;
 }
 
 #options-menu {

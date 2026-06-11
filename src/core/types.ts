@@ -31,4 +31,7 @@ export interface Building {
   orderTimer: number;
   // maison
   activeCars: number;
+  // Animation d'apparition (entreprises) : hauteur de chute restante, en
+  // niveaux. Transitoire — retiré à la sérialisation, jamais persisté.
+  fallZ?: number;
 }

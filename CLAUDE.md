@@ -99,7 +99,10 @@ le callback `onMessage`). `Game` est le seul à relier les modules.
 ### Persistance (localStorage)
 - `ttt_best` : record. `ttt_opts` : rotation caméra + vitesse. `ttt_save` : partie en
   cours (routes, bâtiments, économie — PAS les véhicules ; `assigned`/`activeCars`
-  sont remis à 0 à la restauration).
+  sont remis à 0 à la restauration). `ttt_cfg` : overrides de `Config` (sidebar
+  debug) — seules les clés numériques différant des défauts ; appliqués à
+  l'évaluation du module `Config`, avant que le Renderer ne fige
+  `TILE_W`/`TILE_H`/`Z_STEP`.
 - Autosave toutes les 5 s + `beforeunload`/`visibilitychange`. Effacée au game over.
 - Toute évolution du format de sauvegarde doit rester tolérante aux anciennes données
   (`fromSave` est entouré de try/catch et retombe sur une partie neuve).
