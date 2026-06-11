@@ -1,6 +1,6 @@
 import { Config } from "../Config";
 import type { Dir, RoadPiece, Building } from "../core/types";
-import { DX, DY } from "../core/types";
+import { DX, DY, opp } from "../core/types";
 import type { Game } from "../Game";
 import type { Simulation } from "../sim/Simulation";
 
@@ -23,6 +23,11 @@ const EDGE_CORNERS: [number, number][] = [
   [3, 0],
   [0, 1],
 ];
+// Milieu de chaque bord du losange (indexé par direction écran).
+const EDGE_MID: [number, number][] = EDGE_CORNERS.map(([a, b]): [number, number] => [
+  (CORNERS[a][0] + CORNERS[b][0]) / 2,
+  (CORNERS[a][1] + CORNERS[b][1]) / 2,
+]);
 
 interface Drawable {
   key: number;
@@ -457,58 +462,74 @@ export class Renderer {
     g.lineWidth = 1;
     g.stroke();
 
-    // Marquage central
+    // Marquage central : pointillés jaunes suivant la géométrie de la route
+    const yc = cy - p.level * Z;
     g.fillStyle = "rgba(235,225,160,0.8)";
+
     if (p.ramp !== null) {
+      // Rampe : ligne pointillée le long de la pente (bord bas -> bord haut).
       const rd = this.rotDir(p.ramp);
-      const [c1, c2] = EDGE_CORNERS[rd];
-      const hx = (CORNERS[c1][0] + CORNERS[c2][0]) / 2;
-      const hy = (CORNERS[c1][1] + CORNERS[c2][1]) / 2 - (p.level + 1) * Z;
-      const lx = -hx;
-      const ly = (CORNERS[c1][1] + CORNERS[c2][1]) / -2 - p.level * Z;
-      g.fillRect(cx + Math.round(hx * 0.4), cy + Math.round((hy + ly) / 2 + (hy - ly) * 0.2), 2, 1);
-      g.fillRect(cx + Math.round(lx * 0.4), cy + Math.round((hy + ly) / 2 - (hy - ly) * 0.2), 2, 1);
-    } else {
-      g.fillRect(cx - 1, cy - p.level * Z, 2, 1);
+      const [ex, ey] = EDGE_MID[rd];
+      const hy = ey - (p.level + 1) * Z; // milieu du bord haut
+      const ly = -ey - p.level * Z; // milieu du bord bas
+      for (const t of [-0.75, 0, 0.75])
+        this.dash(cx + ex * t, cy + (ly + hy) / 2 + ((hy - ly) / 2) * t);
+      return;
     }
 
-    // Marquages de circulation (segments plats uniquement)
-    if (p.ramp === null) {
-      if (sim.isIntersection(x, y, p.level)) {
-        // surface de l'intersection légèrement éclaircie
-        g.fillStyle = "rgba(255,255,255,0.08)";
-        this.diamondPath(cx, cy, p.level, raise);
-        g.fill();
-        // Repère de l'axe prioritaire : trait vert reliant les deux bords de l'axe.
-        const M = sim.mainAxisAt(x, y, p.level);
-        const yc = cy - p.level * Z;
-        g.strokeStyle = "rgba(120,230,140,0.9)";
-        g.lineWidth = 1;
-        for (const gd of (M === 0 ? [0, 2] : [1, 3]) as Dir[]) {
-          const rd = this.rotDir(gd);
-          const [c1, c2] = EDGE_CORNERS[rd];
-          const mx = (CORNERS[c1][0] + CORNERS[c2][0]) / 2;
-          const my = (CORNERS[c1][1] + CORNERS[c2][1]) / 2;
-          g.beginPath();
-          g.moveTo(cx, yc);
-          g.lineTo(cx + mx, yc + my);
-          g.stroke();
-        }
-      } else {
-        // ligne d'arrêt blanche sur les bords menant à une intersection
-        for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
-          if (!sim.isIntersection(x + DX[d], y + DY[d], p.level)) continue;
-          const rd = this.rotDir(d);
-          const [c1, c2] = EDGE_CORNERS[rd];
-          g.strokeStyle = "rgba(245,240,225,0.85)";
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(cx + CORNERS[c1][0] * 0.65, cy + CORNERS[c1][1] * 0.65 - p.level * Z);
-          g.lineTo(cx + CORNERS[c2][0] * 0.65, cy + CORNERS[c2][1] * 0.65 - p.level * Z);
-          g.stroke();
-        }
-      }
+    const arms = sim.connectedArms(x, y, p.level);
+    const nArms = arms.reduce((n, a) => n + (a ? 1 : 0), 0);
+
+    if (nArms >= 3) {
+      // Intersection (T ou X) : surface éclaircie, et les pointillés
+      // traversent dans le sens de la route principale (axe prioritaire).
+      g.fillStyle = "rgba(255,255,255,0.08)";
+      this.diamondPath(cx, cy, p.level, raise);
+      g.fill();
+      g.fillStyle = "rgba(235,225,160,0.8)";
+      const rd = this.rotDir((sim.mainAxisAt(x, y, p.level) === 0 ? 0 : 1) as Dir);
+      const [mx, my] = EDGE_MID[rd];
+      this.dash(cx, yc);
+      this.dash(cx + mx * 0.75, yc + my * 0.75);
+      this.dash(cx - mx * 0.75, yc - my * 0.75);
+      return;
     }
+
+    // Tiret central, puis un tiret aux 3/4 vers chaque bras connecté :
+    // positions entières (±6, ±3) px posées exactement sur la ligne iso
+    // 2:1, qui se prolonge de tuile en tuile. Pièce isolée : simple point
+    // central.
+    this.dash(cx, yc);
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      if (!arms[d] && !(nArms === 1 && arms[opp(d)])) continue;
+      const [mx, my] = EDGE_MID[this.rotDir(d)];
+      this.dash(cx + mx * 0.75, yc + my * 0.75);
+    }
+
+    // Ligne d'arrêt blanche vers une intersection, sur la voie de droite
+    // uniquement (celle qui entre dans le croisement), au ras de la route
+    // principale et légèrement élargie côté trottoir. La route principale
+    // (prioritaire) traverse sans s'arrêter.
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      const nx = x + DX[d];
+      const ny = y + DY[d];
+      if (!sim.isIntersection(nx, ny, p.level)) continue;
+      if (((d % 2) as 0 | 1) === sim.mainAxisAt(nx, ny, p.level)) continue;
+      const rd = this.rotDir(d);
+      const [mx, my] = EDGE_MID[rd];
+      const rc = CORNERS[EDGE_CORNERS[rd][1]]; // coin côté voie entrante
+      g.strokeStyle = "rgba(245,240,225,0.85)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(cx + mx * 0.9, yc + my * 0.9);
+      g.lineTo(cx + (mx + (rc[0] - mx) * 1.2) * 0.9, yc + (my + (rc[1] - my) * 1.2) * 0.9);
+      g.stroke();
+    }
+  }
+
+  // Petit tiret de marquage au sol (2x1 px) centré sur (px, py).
+  private dash(px: number, py: number): void {
+    this.ctx.fillRect(Math.round(px) - 1, Math.round(py), 2, 1);
   }
 
   // ---- bâtiments ----

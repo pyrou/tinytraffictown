@@ -363,7 +363,8 @@ export class Simulation {
 
   // Bras connectés d'un segment plat, par direction grille (false sinon).
   // Les rampes (2 connexions max) ne renvoient aucun bras.
-  private connectedArms(x: number, y: number, z: number): [boolean, boolean, boolean, boolean] {
+  // Public : le Renderer s'en sert pour orienter le marquage au sol.
+  connectedArms(x: number, y: number, z: number): [boolean, boolean, boolean, boolean] {
     const arms: [boolean, boolean, boolean, boolean] = [false, false, false, false];
     const p = this.grid.pieceAtZ(x, y, z);
     if (!p || p.ramp !== null) return arms;
