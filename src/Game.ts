@@ -143,6 +143,7 @@ export class Game {
 
   rotate(d: number): void {
     this.renderer.rot = (this.renderer.rot + d + 4) % 4;
+    this.ui.refreshTools();
     this.saveOpts();
   }
 

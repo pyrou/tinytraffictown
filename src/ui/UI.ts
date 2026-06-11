@@ -578,10 +578,31 @@ export class UI {
       b.classList.toggle("active", this.game.input.tool === key);
     }
     this.setText(this.elLevel, t("level", { n: this.game.input.level }));
+
+    // Flèches isométriques basées sur la direction et la rotation de la caméra
+    // À rot=0 : Est→↘️, Sud→↙️, Ouest→↖️, Nord→↗️
+    const isoArrows = ["↘️", "↗️", "↖️", "↙️"];
+    const isoArraysSud = ["↙️", "↘️", "↗️", "↖️"];
+    const isoArraysNord = ["↗️", "↖️", "↙️", "↘️"];
+
+    let visibleArrow: string;
+    if (this.game.input.rampDir === 1) {
+      // Sud : utiliser un array décalé, indexé par rot
+      visibleArrow = isoArraysSud[this.game.renderer.rot];
+    } else if (this.game.input.rampDir === 3) {
+      // Nord : utiliser un array décalé, indexé par rot
+      visibleArrow = isoArraysNord[this.game.renderer.rot];
+    } else {
+      // Est/Ouest : rotation horaire
+      const visualArrowIdx = (this.game.input.rampDir + this.game.renderer.rot) % 4;
+      visibleArrow = isoArrows[visualArrowIdx];
+    }
+
     this.setText(
       this.btnDir,
       t("rampDir", {
         d: t(`dir${this.game.input.rampDir}` as StringKey),
+        a: visibleArrow,
       }),
     );
   }
