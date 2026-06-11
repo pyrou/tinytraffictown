@@ -137,6 +137,7 @@ export class UI {
   private elFinalBest!: HTMLElement;
   private btnShareX!: HTMLAnchorElement;
   private btnShareBsky!: HTMLAnchorElement;
+  private confirmModal!: HTMLElement;
 
   constructor(root: HTMLElement, game: Game) {
     this.game = game;
@@ -229,7 +230,7 @@ export class UI {
       this.btn(null, "rotRightTip", () => this.game.rotate(1)),
       this.optionsBtn,
       this.btn("shareBtn", "shareTip", () => this.game.shareMap()),
-      this.btn("newGame", "newGameTip", () => this.game.newGame()),
+      this.btn("newGame", "newGameTip", () => this.showConfirmNewGame()),
     );
     // libellés fixes non traduits
     const rotBtns = top.querySelectorAll("button");
@@ -242,10 +243,31 @@ export class UI {
     this.debugPanel = document.createElement("div");
     this.debugPanel.id = "debug";
     this.debugPanel.className = "panel hidden";
+    const debugHeader = document.createElement("div");
+    debugHeader.style.display = "flex";
+    debugHeader.style.justifyContent = "space-between";
+    debugHeader.style.alignItems = "center";
+    debugHeader.style.marginBottom = "6px";
     const dTitle = document.createElement("div");
     dTitle.className = "debug-title";
     dTitle.textContent = "DEBUG";
-    this.debugPanel.appendChild(dTitle);
+    const debugClose = this.btn(null, "closeDebugTip", () =>
+      this.debugPanel.classList.add("hidden"),
+    );
+    debugClose.className = "close";
+    debugClose.textContent = "×";
+    debugClose.style.position = "relative";
+    debugClose.style.top = "auto";
+    debugClose.style.right = "auto";
+    debugClose.style.margin = "0";
+    debugClose.style.width = "18px";
+    debugClose.style.height = "17px";
+    debugClose.style.minWidth = "18px";
+    debugClose.style.padding = "0";
+    debugClose.style.lineHeight = "11px";
+    debugClose.style.fontSize = "12px";
+    debugHeader.append(dTitle, debugClose);
+    this.debugPanel.appendChild(debugHeader);
 
     const swatches = document.createElement("div");
     swatches.className = "swatches";
@@ -264,17 +286,24 @@ export class UI {
     });
     this.debugPanel.appendChild(swatches);
 
-    this.debugPanel.appendChild(
+    // Boutons de debug en 2 lignes (3 boutons par ligne)
+    const debugButtons = document.createElement("div");
+    debugButtons.className = "debug-buttons";
+
+    const line1 = document.createElement("div");
+    line1.className = "debug-line";
+    line1.append(
       this.btn("debugHouse", "debugHouseTip", () =>
         this.game.debugSpawnBuilding("house", this.debugColor),
       ),
-    );
-    this.debugPanel.appendChild(
       this.btn("debugBiz", "debugBizTip", () =>
         this.game.debugSpawnBuilding("biz", this.debugColor),
       ),
+      this.btn("debugBike", "debugBikeTip", () => this.game.debugSpawnBike()),
     );
-    this.debugPanel.appendChild(this.btn("debugBike", "debugBikeTip", () => this.game.debugSpawnBike()));
+
+    const line2 = document.createElement("div");
+    line2.className = "debug-line";
     const bMoney = this.btn(null, null, () => this.game.debugAddCredits());
     // Entrée conservée : ses args sont rafraîchis quand DEBUG_CREDITS change.
     this.moneyEntry = {
@@ -285,13 +314,14 @@ export class UI {
       titleArgs: { n: Config.DEBUG_CREDITS },
     };
     this.registry.push(this.moneyEntry);
-    this.debugPanel.appendChild(bMoney);
-    this.debugPanel.appendChild(
+    line2.append(
       this.btn("debugPurge", "debugPurgeTip", () => this.game.debugClearOrders()),
-    );
-    this.debugPanel.appendChild(
       this.btn("debugTraffic", "debugTrafficTip", () => this.game.debugClearTraffic()),
+      bMoney,
     );
+
+    debugButtons.append(line1, line2);
+    this.debugPanel.appendChild(debugButtons);
     this.buildConfigSection();
     root.appendChild(this.debugPanel);
 
@@ -406,6 +436,28 @@ export class UI {
     oPanel.append(oClose, oTitle, oText, oDevice, oActions);
     this.onboard.appendChild(oPanel);
     root.appendChild(this.onboard);
+
+    // --- modal de confirmation pour "New Game" ---
+    this.confirmModal = document.createElement("div");
+    this.confirmModal.id = "confirm-modal";
+    this.confirmModal.className = "hidden";
+    const cPanel = document.createElement("div");
+    cPanel.className = "panel";
+    const cTitle = document.createElement("h1");
+    this.reg({ el: cTitle, text: "confirmNewGameTitle" });
+    const cText = document.createElement("p");
+    this.reg({ el: cText, text: "confirmNewGameText" });
+    const cActions = document.createElement("div");
+    cActions.className = "actions";
+    const cCancel = this.btn("cancel", null, () => this.hideConfirmNewGame());
+    const cConfirm = this.btn("newGameConfirm", null, () => {
+      this.hideConfirmNewGame();
+      this.game.newGame();
+    });
+    cActions.append(cCancel, cConfirm);
+    cPanel.append(cTitle, cText, cActions);
+    this.confirmModal.appendChild(cPanel);
+    root.appendChild(this.confirmModal);
   }
 
   // Section « CONFIG » de la sidebar debug : édition de toutes les constantes
@@ -546,6 +598,14 @@ export class UI {
 
   showOnboarding(): void {
     this.onboard.classList.remove("hidden");
+  }
+
+  private showConfirmNewGame(): void {
+    this.confirmModal.classList.remove("hidden");
+  }
+
+  private hideConfirmNewGame(): void {
+    this.confirmModal.classList.add("hidden");
   }
 
   private hideHelp(): void {

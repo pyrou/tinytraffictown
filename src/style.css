@@ -217,6 +217,28 @@ canvas#game {
   outline: 1px solid #1a1a1a;
 }
 
+#debug .debug-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+#debug .debug-line {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+
+#debug .debug-line button {
+  flex: 1;
+  font-size: 10px;
+  padding: 4px 2px;
+  min-width: 0;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
 #debug .cfg-head {
   display: flex;
   align-items: center;
@@ -369,7 +391,8 @@ canvas#game {
 }
 
 #overlay,
-#onboard {
+#onboard,
+#confirm-modal {
   position: absolute;
   inset: 0;
   display: flex;
@@ -380,12 +403,14 @@ canvas#game {
 }
 
 #overlay.hidden,
-#onboard.hidden {
+#onboard.hidden,
+#confirm-modal.hidden {
   display: none;
 }
 
 #overlay .panel,
-#onboard .panel {
+#onboard .panel,
+#confirm-modal .panel {
   position: relative;
   padding: 18px 28px;
   text-align: center;
@@ -394,14 +419,16 @@ canvas#game {
 }
 
 #overlay h1,
-#onboard h1 {
+#onboard h1,
+#confirm-modal h1 {
   margin: 0 0 10px;
   font-size: 18px;
   color: #8e2f2c;
 }
 
 #overlay p,
-#onboard p {
+#onboard p,
+#confirm-modal p {
   margin: 4px 0;
   font-size: 12px;
 }
@@ -415,7 +442,9 @@ canvas#game {
 #overlay button,
 #overlay .btn-link,
 #onboard button,
-#onboard .btn-link {
+#onboard .btn-link,
+#confirm-modal button,
+#confirm-modal .btn-link {
   margin-top: 14px;
   font-size: 13px;
   padding: 5px 18px;
@@ -435,7 +464,8 @@ canvas#game {
   font-weight: bold;
 }
 
-#onboard .actions {
+#onboard .actions,
+#confirm-modal .actions {
   display: flex;
   align-items: center;
   justify-content: center;
