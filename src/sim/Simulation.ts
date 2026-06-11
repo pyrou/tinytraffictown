@@ -736,6 +736,19 @@ export class Simulation {
     return out;
   }
 
+  // Emplacements pour les maisons : peuvent être adjacentes aux autres bâtiments.
+  private freeHouseSpots(): { x: number; y: number }[] {
+    const out: { x: number; y: number }[] = [];
+    for (let x = 1; x <= this.grid.size - 2; x++) {
+      for (let y = 1; y <= this.grid.size - 2; y++) {
+        const c = this.grid.cell(x, y);
+        if (c.building || c.pieces.length > 0 || c.river) continue;
+        out.push({ x, y });
+      }
+    }
+    return out;
+  }
+
   // Une case est "collée à une route" si un voisin direct porte une route
   // plate au niveau 0 — celle qui peut desservir un bâtiment (accessNodes).
   private nearRoad(x: number, y: number): boolean {
@@ -775,7 +788,7 @@ export class Simulation {
   // spawn pas. La première maison d'une couleur fonde son quartier librement.
   private findHouseSpot(color: number): { x: number; y: number } | null {
     const homes = this.buildings.filter((b) => b.type === "house" && b.color === color);
-    const spots = this.freeSpots();
+    const spots = this.freeHouseSpots();
     if (homes.length === 0) return this.pickSpot(spots);
     const minDist = (s: { x: number; y: number }) =>
       Math.min(...homes.map((h) => Math.abs(h.x - s.x) + Math.abs(h.y - s.y)));
