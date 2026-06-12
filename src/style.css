@@ -129,6 +129,11 @@ canvas#game {
   margin: 0 2px;
 }
 
+#toolbar button.locked {
+  color: #8a867e;
+  text-shadow: 1px 1px 0 #ffffff;
+}
+
 #status {
   position: absolute;
   bottom: 6px;
@@ -407,7 +412,8 @@ canvas#game {
 
 #overlay,
 #onboard,
-#confirm-modal {
+#confirm-modal,
+#speedway-modal {
   position: absolute;
   inset: 0;
   display: flex;
@@ -419,13 +425,15 @@ canvas#game {
 
 #overlay.hidden,
 #onboard.hidden,
-#confirm-modal.hidden {
+#confirm-modal.hidden,
+#speedway-modal.hidden {
   display: none;
 }
 
 #overlay .panel,
 #onboard .panel,
-#confirm-modal .panel {
+#confirm-modal .panel,
+#speedway-modal .panel {
   position: relative;
   padding: 18px 28px;
   text-align: center;
@@ -435,7 +443,8 @@ canvas#game {
 
 #overlay h1,
 #onboard h1,
-#confirm-modal h1 {
+#confirm-modal h1,
+#speedway-modal h1 {
   margin: 0 0 10px;
   font-size: 18px;
   color: #8e2f2c;
@@ -443,7 +452,8 @@ canvas#game {
 
 #overlay p,
 #onboard p,
-#confirm-modal p {
+#confirm-modal p,
+#speedway-modal p {
   margin: 4px 0;
   font-size: 12px;
 }
@@ -475,7 +485,9 @@ canvas#game {
 #onboard button,
 #onboard .btn-link,
 #confirm-modal button,
-#confirm-modal .btn-link {
+#confirm-modal .btn-link,
+#speedway-modal button,
+#speedway-modal .btn-link {
   margin-top: 14px;
   font-size: 13px;
   padding: 5px 18px;
@@ -496,7 +508,8 @@ canvas#game {
 }
 
 #onboard .actions,
-#confirm-modal .actions {
+#confirm-modal .actions,
+#speedway-modal .actions {
   display: flex;
   align-items: center;
   justify-content: center;

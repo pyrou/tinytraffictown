@@ -37,6 +37,9 @@ const fr = {
   // Barre d'outils
   toolRoad: "🛣 Route",
   toolRoadTip: "Construire une route (A)",
+  toolSpeedway: "▣ Autoroute",
+  toolSpeedwayTip: "Construire une autoroute, rapide mais sans desserte directe (S)",
+  toolSpeedwayLockedTip: "Autoroute débloquée à partir de {n} points",
   toolRamp: "⛰ Rampe",
   toolRampTip: "Construire une rampe (Z)",
   toolBulldoze: "🚜 Démolir",
@@ -59,7 +62,7 @@ const fr = {
     "Clic droit : déplacer la caméra<br>" +
     "Mobile : deux doigts pour déplacer la caméra<br>" +
     "Molette / Q / E : niveau de hauteur<br>" +
-    "R : rotation &nbsp;·&nbsp; T : sens de rampe<br>" +
+    "R : rotation &nbsp;·&nbsp; S : autoroute &nbsp;·&nbsp; T : sens de rampe<br>" +
     "Espace : pause &nbsp;·&nbsp; 1 / 2 / 4 : vitesse<br>" +
     "Double-clic (route) : axe prioritaire d'un croisement en X<br>" +
     "Croisement : écart de 2 niveaux requis.<br>" +
@@ -110,6 +113,8 @@ const fr = {
   cfg_WATERFALL_BLOCKS: "Longueur du fondu des cascades, en blocs de terre.",
   cfg_START_CREDITS: "Crédits au début d'une partie.",
   cfg_COST_ROAD: "Coût d'une route au sol.",
+  cfg_SPEEDWAY_UNLOCK_SCORE: "Score requis pour débloquer les autoroutes.",
+  cfg_SPEEDWAY_COST_FACTOR: "Multiplicateur du coût d'une autoroute.",
   cfg_COST_RAMP: "Coût de base d'une rampe.",
   cfg_COST_PER_LEVEL: "Surcoût par niveau d'élévation.",
   cfg_DELIVERY_CREDITS: "Crédits gagnés par livraison.",
@@ -122,6 +127,7 @@ const fr = {
   cfg_DANGER_DECAY_TIME: "Secondes pour que la jauge redescende de 100 % à 0.",
   cfg_MAX_ORDER_PIPS: "Nombre maximum de pastilles de commandes affichées.",
   cfg_CAR_SPEED: "Vitesse des voitures (cases par seconde).",
+  cfg_SPEEDWAY_SPEED_FACTOR: "Multiplicateur de vitesse des voitures sur autoroute.",
   cfg_CARS_PER_HOUSE: "Nombre maximum de voitures par maison.",
   cfg_DISPATCH_INTERVAL: "Fréquence (s) d'affectation des livraisons.",
   cfg_LANE_OFFSET: "Décalage latéral des véhicules (conduite à droite), en cases.",
@@ -185,6 +191,11 @@ const fr = {
   confirmNewGameText: "Vous allez perdre votre progression actuelle.",
   cancel: "Annuler",
   newGameConfirm: "Nouvelle partie",
+  ok: "OK",
+
+  // Modal d'autoroute verrouillée
+  speedwayLockedTitle: "Autoroute verrouillée",
+  speedwayLockedText: "Les autoroutes sont débloquées à partir de {n} points.",
 
   // Messages de jeu
   msgWelcome: "Bienvenue ! Reliez les maisons aux entreprises de même couleur.",
@@ -252,6 +263,9 @@ const en: Record<StringKey, string> = {
 
   toolRoad: "🛣 Road",
   toolRoadTip: "Build a road (A)",
+  toolSpeedway: "▣ Speedway",
+  toolSpeedwayTip: "Build a speedway, fast but with no direct building access (S)",
+  toolSpeedwayLockedTip: "Speedways unlock at {n} points",
   toolRamp: "⛰ Ramp",
   toolRampTip: "Build a ramp (Z)",
   toolBulldoze: "🚜 Demolish",
@@ -273,7 +287,7 @@ const en: Record<StringKey, string> = {
     "Right click: pan the camera<br>" +
     "Mobile: two fingers to pan the camera<br>" +
     "Wheel / Q / E: height level<br>" +
-    "R: rotate &nbsp;·&nbsp; T: ramp direction<br>" +
+    "R: rotate &nbsp;·&nbsp; S: speedway &nbsp;·&nbsp; T: ramp direction<br>" +
     "Space: pause &nbsp;·&nbsp; 1 / 2 / 4: speed<br>" +
     "Double-click (road): priority axis of a 4-way junction<br>" +
     "Crossing: 2-level gap required.<br>" +
@@ -322,6 +336,8 @@ const en: Record<StringKey, string> = {
   cfg_WATERFALL_BLOCKS: "Waterfall fade-out length, in earth blocks.",
   cfg_START_CREDITS: "Credits at the start of a game.",
   cfg_COST_ROAD: "Cost of a ground road.",
+  cfg_SPEEDWAY_UNLOCK_SCORE: "Score required to unlock speedways.",
+  cfg_SPEEDWAY_COST_FACTOR: "Cost multiplier for a speedway.",
   cfg_COST_RAMP: "Base cost of a ramp.",
   cfg_COST_PER_LEVEL: "Extra cost per elevation level.",
   cfg_DELIVERY_CREDITS: "Credits earned per delivery.",
@@ -334,6 +350,7 @@ const en: Record<StringKey, string> = {
   cfg_DANGER_DECAY_TIME: "Seconds for the gauge to drop from 100% to 0.",
   cfg_MAX_ORDER_PIPS: "Maximum number of order pips displayed.",
   cfg_CAR_SPEED: "Car speed (cells per second).",
+  cfg_SPEEDWAY_SPEED_FACTOR: "Car speed multiplier on speedways.",
   cfg_CARS_PER_HOUSE: "Maximum number of cars per house.",
   cfg_DISPATCH_INTERVAL: "Delivery assignment frequency (s).",
   cfg_LANE_OFFSET: "Lateral vehicle offset (right-hand traffic), in cells.",
@@ -394,6 +411,10 @@ const en: Record<StringKey, string> = {
   confirmNewGameText: "You will lose your current progress.",
   cancel: "Cancel",
   newGameConfirm: "New game",
+  ok: "OK",
+
+  speedwayLockedTitle: "Speedway locked",
+  speedwayLockedText: "Speedways unlock at {n} points.",
 
   msgWelcome: "Welcome! Connect houses to businesses of the same color.",
   msgRestored: "Previous game restored.",

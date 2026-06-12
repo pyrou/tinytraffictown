@@ -1,5 +1,5 @@
 import { Config } from "./Config";
-import type { Dir } from "./core/types";
+import type { Dir, RoadKind } from "./core/types";
 import { getLang, setLang, t } from "./i18n";
 import { Input } from "./input/Input";
 import { Renderer } from "./render/Renderer";
@@ -115,9 +115,17 @@ export class Game {
 
   // ---- actions de construction ----
 
-  place(x: number, y: number, level: number, ramp: Dir | null): void {
-    const r = this.sim.tryPlace(x, y, level, ramp);
+  place(x: number, y: number, level: number, ramp: Dir | null, kind: RoadKind = "road"): void {
+    if (kind === "speedway" && !this.isSpeedwayUnlocked()) {
+      this.ui.showSpeedwayLocked();
+      return;
+    }
+    const r = this.sim.tryPlace(x, y, level, ramp, kind);
     if (r.msg) this.setMessage(r.msg);
+  }
+
+  isSpeedwayUnlocked(): boolean {
+    return this.sim.score >= Config.SPEEDWAY_UNLOCK_SCORE;
   }
 
   remove(x: number, y: number): void {

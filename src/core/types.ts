@@ -4,12 +4,15 @@ export const DX = [1, 0, -1, 0] as const;
 export const DY = [0, 1, 0, -1] as const;
 export const opp = (d: Dir): Dir => (((d + 2) % 4) as Dir);
 
+export type RoadKind = "road" | "speedway";
+
 // Un segment de route dans une cellule.
 // level = niveau de la base ; ramp = direction ascendante (null = plat).
 // Une rampe occupe les niveaux [level, level + 1].
 export interface RoadPiece {
   level: number;
   ramp: Dir | null;
+  kind: RoadKind; // speedway uniquement sur les segments plats
   cost: number; // prix payé, remboursé à la destruction
   // Axe prioritaire d'un croisement en X : 0 = E/O, 1 = N/S. Modifiable par
   // double-clic (outil route) ; ignoré pour les T (axe déduit de la géométrie).

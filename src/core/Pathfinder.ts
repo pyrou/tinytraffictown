@@ -1,5 +1,5 @@
 import { Grid } from "./Grid";
-import type { Dir } from "./types";
+import type { Dir, RoadPiece } from "./types";
 import { DX, DY, opp } from "./types";
 
 // Un nœud du graphe routier : une cellule + l'index d'un segment dans la cellule.
@@ -69,6 +69,7 @@ export function findPath(
   goals: Set<number>,
   tx: number,
   ty: number,
+  canUse: (piece: RoadPiece) => boolean = () => true,
 ): PathNode[] | null {
   if (starts.length === 0 || goals.size === 0) return null;
 
@@ -113,7 +114,7 @@ export function findPath(
     }
 
     const piece = grid.cell(x, y).pieces[pi];
-    if (!piece) continue;
+    if (!piece || !canUse(piece)) continue;
     const gk = g.get(k)!;
 
     for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
@@ -124,6 +125,7 @@ export function findPath(
       if (!grid.inBounds(nx, ny)) continue;
       const npieces = grid.cell(nx, ny).pieces;
       for (let qi = 0; qi < npieces.length; qi++) {
+        if (!canUse(npieces[qi])) continue;
         if (Grid.edgeHeight(npieces[qi], opp(d)) !== eh) continue;
         const nk = nodeKey(grid, nx, ny, qi);
         if (closed.has(nk)) continue;

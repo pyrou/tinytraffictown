@@ -1,6 +1,6 @@
 import { Config } from "../Config";
-import type { Building, Dir, RoadPiece } from "./types";
-import { opp } from "./types";
+import type { Building, Dir, RoadKind, RoadPiece } from "./types";
+import { DX, DY, opp } from "./types";
 
 export interface Cell {
   pieces: RoadPiece[]; // triées par niveau croissant
@@ -47,8 +47,15 @@ export class Grid {
   // Peut-on placer un segment (level, ramp) ici ?
   // Règle de croisement : il faut un écart vertical >= 2 entre segments
   // (une route au sol + une route au niveau 2 peuvent se croiser).
-  canPlace(x: number, y: number, level: number, ramp: Dir | null): boolean {
+  canPlace(
+    x: number,
+    y: number,
+    level: number,
+    ramp: Dir | null,
+    kind: RoadKind = "road",
+  ): boolean {
     if (!this.inBounds(x, y)) return false;
+    if (ramp !== null && kind === "speedway") return false;
     const c = this.cell(x, y);
     if (c.building) return false;
     // Sur l'eau, seul un pont assez haut est permis : la rampe d'accès
@@ -62,7 +69,56 @@ export class Grid {
       if (!clear) return false;
     }
     if (ramp === null && this.makes2x2Square(x, y, level)) return false;
+    if (ramp === null && !this.respectsSpeedwayLinks(x, y, level, kind)) return false;
     return true;
+  }
+
+  private connectedArmCount(x: number, y: number, piece: RoadPiece): number {
+    let n = 0;
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      const eh = Grid.edgeHeight(piece, d);
+      if (eh === null) continue;
+      const nx = x + DX[d];
+      const ny = y + DY[d];
+      if (!this.inBounds(nx, ny)) continue;
+      for (const q of this.cell(nx, ny).pieces) {
+        if (Grid.edgeHeight(q, opp(d)) === eh) {
+          n++;
+          break;
+        }
+      }
+    }
+    return n;
+  }
+
+  private wouldConnect(level: number, nx: number, ny: number, d: Dir): boolean {
+    for (const q of this.cell(nx, ny).pieces) {
+      if (Grid.edgeHeight(q, opp(d)) === level) return true;
+    }
+    return false;
+  }
+
+  // Une speedway reste une voie rapide : jamais plus de deux connexions.
+  // On protège aussi les speedways voisines quand une route classique est posée.
+  private respectsSpeedwayLinks(
+    x: number,
+    y: number,
+    level: number,
+    kind: RoadKind,
+  ): boolean {
+    let ownLinks = 0;
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      const nx = x + DX[d];
+      const ny = y + DY[d];
+      if (!this.inBounds(nx, ny)) continue;
+      if (this.wouldConnect(level, nx, ny, d)) ownLinks++;
+      for (const q of this.cell(nx, ny).pieces) {
+        if (q.kind !== "speedway" || q.ramp !== null) continue;
+        if (Grid.edgeHeight(q, opp(d)) !== level) continue;
+        if (this.connectedArmCount(nx, ny, q) + 1 > 2) return false;
+      }
+    }
+    return kind !== "speedway" || ownLinks <= 2;
   }
 
   private flatAt(x: number, y: number, level: number): boolean {

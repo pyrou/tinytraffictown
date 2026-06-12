@@ -30,6 +30,8 @@ const CFG_SECTIONS: [StringKey, ConfigNumKey[]][] = [
     [
       "START_CREDITS",
       "COST_ROAD",
+      "SPEEDWAY_UNLOCK_SCORE",
+      "SPEEDWAY_COST_FACTOR",
       "COST_RAMP",
       "COST_PER_LEVEL",
       "DELIVERY_CREDITS",
@@ -52,6 +54,7 @@ const CFG_SECTIONS: [StringKey, ConfigNumKey[]][] = [
     "cfgSecCars",
     [
       "CAR_SPEED",
+      "SPEEDWAY_SPEED_FACTOR",
       "CARS_PER_HOUSE",
       "DISPATCH_INTERVAL",
       "LANE_OFFSET",
@@ -125,6 +128,7 @@ export class UI {
   private elDebugDuration!: HTMLElement;
   private debugColor = 0;
   private moneyEntry!: TrEntry;
+  private speedwayLockedEntry!: TrEntry;
   private cfgRows: {
     key: ConfigNumKey;
     row: HTMLElement;
@@ -141,6 +145,7 @@ export class UI {
   private btnShareX!: HTMLAnchorElement;
   private btnShareBsky!: HTMLAnchorElement;
   private confirmModal!: HTMLElement;
+  private speedwayModal!: HTMLElement;
 
   constructor(root: HTMLElement, game: Game) {
     this.game = game;
@@ -352,6 +357,7 @@ export class UI {
       bar.appendChild(b);
     };
     addTool("road", "toolRoad", "toolRoadTip");
+    addTool("speedway", "toolSpeedway", "toolSpeedwayTip");
     addTool("ramp", "toolRamp", "toolRampTip");
     addTool("bulldoze", "toolBulldoze", "toolBulldozeTip");
 
@@ -480,6 +486,28 @@ export class UI {
     cPanel.append(cTitle, cText, cActions);
     this.confirmModal.appendChild(cPanel);
     root.appendChild(this.confirmModal);
+
+    // --- modal d'autoroute verrouillée ---
+    this.speedwayModal = document.createElement("div");
+    this.speedwayModal.id = "speedway-modal";
+    this.speedwayModal.className = "hidden";
+    const sPanel = document.createElement("div");
+    sPanel.className = "panel";
+    const sTitle = document.createElement("h1");
+    this.reg({ el: sTitle, text: "speedwayLockedTitle" });
+    const sText = document.createElement("p");
+    this.speedwayLockedEntry = {
+      el: sText,
+      text: "speedwayLockedText",
+      textArgs: { n: Config.SPEEDWAY_UNLOCK_SCORE },
+    };
+    this.registry.push(this.speedwayLockedEntry);
+    const sActions = document.createElement("div");
+    sActions.className = "actions";
+    sActions.appendChild(this.btn("ok", null, () => this.hideSpeedwayLocked()));
+    sPanel.append(sTitle, sText, sActions);
+    this.speedwayModal.appendChild(sPanel);
+    root.appendChild(this.speedwayModal);
   }
 
   private buildDebugStats(): void {
@@ -643,6 +671,14 @@ export class UI {
     this.confirmModal.classList.add("hidden");
   }
 
+  showSpeedwayLocked(): void {
+    this.speedwayModal.classList.remove("hidden");
+  }
+
+  private hideSpeedwayLocked(): void {
+    this.speedwayModal.classList.add("hidden");
+  }
+
   private hideHelp(): void {
     this.helpPanel.classList.add("hidden");
   }
@@ -656,6 +692,7 @@ export class UI {
     // DEBUG_CREDITS est éditable : on rafraîchit les args avant application.
     this.moneyEntry.textArgs = { n: Config.DEBUG_CREDITS };
     this.moneyEntry.titleArgs = { n: Config.DEBUG_CREDITS };
+    this.speedwayLockedEntry.textArgs = { n: Config.SPEEDWAY_UNLOCK_SCORE };
     for (const e of this.registry) {
       if (e.text) this.setText(e.el, t(e.text, e.textArgs));
       if (e.html) e.el.innerHTML = t(e.html);
@@ -671,6 +708,14 @@ export class UI {
   refreshTools(): void {
     for (const [key, b] of this.toolButtons) {
       b.classList.toggle("active", this.game.input.tool === key);
+    }
+    const speedway = this.toolButtons.get("speedway");
+    if (speedway) {
+      const locked = !this.game.isSpeedwayUnlocked();
+      speedway.classList.toggle("locked", locked);
+      speedway.title = locked
+        ? t("toolSpeedwayLockedTip", { n: Config.SPEEDWAY_UNLOCK_SCORE })
+        : t("toolSpeedwayTip");
     }
     this.setText(this.elLevel, t("level", { n: this.game.input.level }));
 
@@ -719,6 +764,7 @@ export class UI {
     this.setText(this.btnPause, this.game.paused ? t("resume") : t("pause"));
     this.setText(this.btnSpeed, `x${this.game.speed}`);
     this.setText(this.elStatus, this.game.message || t("ready"));
+    this.refreshTools();
   }
 
   showGameOver(score: number, best: number): void {

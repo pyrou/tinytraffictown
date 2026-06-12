@@ -13,6 +13,8 @@ export const Config = {
   // --- Économie ---
   START_CREDITS: 300,
   COST_ROAD: 10, // route au sol
+  SPEEDWAY_UNLOCK_SCORE: 3000, // score requis pour débloquer les autoroutes
+  SPEEDWAY_COST_FACTOR: 2, // multiplicateur du coût d'une autoroute
   COST_RAMP: 18, // rampe (base)
   COST_PER_LEVEL: 8, // surcoût par niveau d'élévation
   DELIVERY_CREDITS: 14,
@@ -29,6 +31,7 @@ export const Config = {
 
   // --- Voitures & circulation ---
   CAR_SPEED: 2.0, // cases par seconde
+  SPEEDWAY_SPEED_FACTOR: 2, // multiplicateur de vitesse voiture sur autoroute
   CARS_PER_HOUSE: 2,
   DISPATCH_INTERVAL: 0.4, // fréquence d'affectation des livraisons
   LANE_OFFSET: 0.18, // décalage latéral (conduite à droite), en cases

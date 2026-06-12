@@ -480,6 +480,12 @@ export class Renderer {
     const arms = sim.connectedArms(x, y, p.level);
     const nArms = arms.reduce((n, a) => n + (a ? 1 : 0), 0);
 
+    if (p.kind === "speedway") {
+      this.drawSpeedwayMarkings(cx, yc, p.level, arms);
+      this.drawStopLines(cx, yc, x, y, p.level, sim);
+      return;
+    }
+
     if (nArms >= 3) {
       // Intersection (T ou X) : surface éclaircie, et les pointillés
       // traversent dans le sens de la route principale (axe prioritaire).
@@ -510,11 +516,55 @@ export class Renderer {
     // uniquement (celle qui entre dans le croisement), au ras de la route
     // principale et légèrement élargie côté trottoir. La route principale
     // (prioritaire) traverse sans s'arrêter.
+    this.drawStopLines(cx, yc, x, y, p.level, sim);
+  }
+
+  private drawSpeedwayMarkings(
+    cx: number,
+    yc: number,
+    level: number,
+    arms: [boolean, boolean, boolean, boolean],
+  ): void {
+    const g = this.ctx;
+    g.strokeStyle = "rgba(255,255,255,0.92)";
+    g.lineWidth = 1;
+    for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
+      const rd = this.rotDir(d);
+      if (arms[d]) {
+        const [mx, my] = EDGE_MID[rd];
+        g.beginPath();
+        g.moveTo(cx, yc);
+        g.lineTo(cx + mx * 0.88, yc + my * 0.88);
+        g.stroke();
+        continue;
+      }
+      const [c1, c2] = EDGE_CORNERS[rd];
+      g.beginPath();
+      g.moveTo(cx + CORNERS[c1][0], yc + CORNERS[c1][1]);
+      g.lineTo(cx + CORNERS[c2][0], yc + CORNERS[c2][1]);
+      g.stroke();
+    }
+    if (!arms.some(Boolean)) {
+      g.strokeStyle = "rgba(255,255,255,0.98)";
+      this.diamondPath(cx, yc + level * Z, level, [0, 0, 0, 0]);
+      g.stroke();
+    }
+  }
+
+  private drawStopLines(
+    cx: number,
+    yc: number,
+    x: number,
+    y: number,
+    level: number,
+    sim: Simulation,
+  ): void {
+    const g = this.ctx;
     for (let d = 0 as Dir; d < 4; d = ((d + 1) as Dir)) {
       const nx = x + DX[d];
       const ny = y + DY[d];
-      if (!sim.isIntersection(nx, ny, p.level)) continue;
-      if (((d % 2) as 0 | 1) === sim.mainAxisAt(nx, ny, p.level)) continue;
+      if (!sim.isIntersection(nx, ny, level)) continue;
+      if (((d % 2) as 0 | 1) === sim.mainAxisAt(nx, ny, level)) continue;
       const rd = this.rotDir(d);
       const [mx, my] = EDGE_MID[rd];
       const rc = CORNERS[EDGE_CORNERS[rd][1]]; // coin côté voie entrante
@@ -835,6 +885,7 @@ export class Renderer {
     const tool = game.input.tool;
     const level = game.input.level;
     const ramp = tool === "ramp" ? game.input.rampDir : null;
+    const kind = tool === "speedway" ? "speedway" : "road";
 
     let ok: boolean;
     let raise = [0, 0, 0, 0];
@@ -849,8 +900,8 @@ export class Renderer {
       }
     } else {
       ok =
-        game.sim.grid.canPlace(x, y, level, ramp) &&
-        game.sim.credits >= game.sim.pieceCost(level, ramp);
+        game.sim.grid.canPlace(x, y, level, ramp, kind) &&
+        game.sim.credits >= game.sim.pieceCost(level, ramp, kind);
       if (ramp !== null) {
         const rd = this.rotDir(ramp);
         for (const ci of EDGE_CORNERS[rd]) raise[ci] = 1;

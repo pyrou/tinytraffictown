@@ -2,7 +2,7 @@ import { Config } from "../Config";
 import type { Dir } from "../core/types";
 import type { Game } from "../Game";
 
-export type Tool = "road" | "ramp" | "bulldoze";
+export type Tool = "road" | "speedway" | "ramp" | "bulldoze";
 
 export class Input {
   tool: Tool = "road";
@@ -40,6 +40,10 @@ export class Input {
   }
 
   setTool(t: Tool): void {
+    if (t === "speedway" && !this.game.isSpeedwayUnlocked()) {
+      this.game.ui.showSpeedwayLocked();
+      return;
+    }
     this.tool = t;
     this.game.ui.refreshTools();
   }
@@ -142,8 +146,8 @@ export class Input {
   }
 
   private act(x: number, y: number): void {
-    if (this.tool === "road") {
-      this.game.place(x, y, this.level, null);
+    if (this.tool === "road" || this.tool === "speedway") {
+      this.game.place(x, y, this.level, null, this.tool === "speedway" ? "speedway" : "road");
     } else if (this.tool === "ramp") {
       this.game.place(x, y, this.level, this.rampDir);
     } else {
@@ -174,6 +178,9 @@ export class Input {
         break;
       case "a":
         this.setTool("road");
+        break;
+      case "s":
+        this.setTool("speedway");
         break;
       case "z":
         this.setTool("ramp");

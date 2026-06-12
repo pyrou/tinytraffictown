@@ -2,7 +2,7 @@ import { Config } from "../Config";
 import { Grid } from "../core/Grid";
 import { findPath, nodeKey } from "../core/Pathfinder";
 import type { PathNode } from "../core/Pathfinder";
-import type { Building, Dir } from "../core/types";
+import type { Building, Dir, RoadKind, RoadPiece } from "../core/types";
 import { DX, DY, opp } from "../core/types";
 import { t } from "../i18n";
 import type { MapData } from "../storage/MapCode";
@@ -32,7 +32,7 @@ export interface Car {
 }
 
 export interface SaveData {
-  pieces: { x: number; y: number; l: number; r: number | null; c: number; m?: 0 | 1 }[];
+  pieces: { x: number; y: number; l: number; r: number | null; c: number; m?: 0 | 1; k?: RoadKind }[];
   buildings: Building[];
   credits: number;
   score: number;
@@ -144,14 +144,21 @@ export class Simulation {
   // Construction / destruction
   // ------------------------------------------------------------------
 
-  pieceCost(level: number, ramp: Dir | null): number {
+  pieceCost(level: number, ramp: Dir | null, kind: RoadKind = "road"): number {
     const base = ramp !== null ? Config.COST_RAMP : Config.COST_ROAD;
-    return base + level * Config.COST_PER_LEVEL;
+    const cost = base + level * Config.COST_PER_LEVEL;
+    return ramp === null && kind === "speedway" ? cost * Config.SPEEDWAY_COST_FACTOR : cost;
   }
 
-  tryPlace(x: number, y: number, level: number, ramp: Dir | null): { ok: boolean; msg: string } {
+  tryPlace(
+    x: number,
+    y: number,
+    level: number,
+    ramp: Dir | null,
+    kind: RoadKind = "road",
+  ): { ok: boolean; msg: string } {
     if (this.gameOver) return { ok: false, msg: "" };
-    if (!this.grid.canPlace(x, y, level, ramp)) {
+    if (!this.grid.canPlace(x, y, level, ramp, kind)) {
       if (
         this.grid.inBounds(x, y) &&
         this.grid.cell(x, y).river &&
@@ -164,13 +171,13 @@ export class Simulation {
       }
       return { ok: false, msg: t("msgCantBuild") };
     }
-    const cost = this.pieceCost(level, ramp);
+    const cost = this.pieceCost(level, ramp, kind);
     if (this.credits < cost) {
       return { ok: false, msg: t("msgNoFunds", { c: cost }) };
     }
     this.credits -= cost;
     this.grid.cell(x, y).tree = false; // la route rase l'arbre, définitivement
-    this.grid.addPiece(x, y, { level, ramp, cost });
+    this.grid.addPiece(x, y, { level, ramp, kind, cost });
     return { ok: true, msg: t("msgBuilt", { c: cost }) };
   }
 
@@ -270,7 +277,7 @@ export class Simulation {
   // ------------------------------------------------------------------
 
   // Nœuds routiers plats au niveau 0 adjacents à un bâtiment.
-  private accessNodes(b: Building): PathNode[] {
+  private accessNodes(b: Building, allowSpeedway: boolean): PathNode[] {
     const out: PathNode[] = [];
     for (let d = 0; d < 4; d++) {
       const nx = b.x + DX[d];
@@ -278,17 +285,30 @@ export class Simulation {
       if (!this.grid.inBounds(nx, ny)) continue;
       const pieces = this.grid.cell(nx, ny).pieces;
       for (let pi = 0; pi < pieces.length; pi++) {
-        if (pieces[pi].level === 0 && pieces[pi].ramp === null) out.push({ x: nx, y: ny, pi });
+        if (
+          pieces[pi].level === 0 &&
+          pieces[pi].ramp === null &&
+          (allowSpeedway || pieces[pi].kind !== "speedway")
+        ) {
+          out.push({ x: nx, y: ny, pi });
+        }
       }
     }
     return out;
   }
 
-  private computeRoute(from: Building, to: Building): Waypoint[] | null {
-    const starts = this.accessNodes(from);
-    const goalNodes = this.accessNodes(to);
+  private computeRoute(from: Building, to: Building, allowSpeedway: boolean): Waypoint[] | null {
+    const starts = this.accessNodes(from, false);
+    const goalNodes = this.accessNodes(to, false);
     const goals = new Set(goalNodes.map((n) => nodeKey(this.grid, n.x, n.y, n.pi)));
-    const nodes = findPath(this.grid, starts, goals, to.x, to.y);
+    const nodes = findPath(
+      this.grid,
+      starts,
+      goals,
+      to.x,
+      to.y,
+      (p) => allowSpeedway || p.kind !== "speedway",
+    );
     if (!nodes) return null;
     const wps: Waypoint[] = [{ x: from.x, y: from.y, z: 0, road: false }];
     for (const n of nodes) {
@@ -315,7 +335,7 @@ export class Simulation {
             Math.abs(a.x - biz.x) + Math.abs(a.y - biz.y) - (Math.abs(b.x - biz.x) + Math.abs(b.y - biz.y)),
         );
       for (const house of houses) {
-        const path = this.computeRoute(house, biz);
+        const path = this.computeRoute(house, biz, true);
         if (!path) continue;
         this.cars.push({
           kind: "car",
@@ -535,7 +555,7 @@ export class Simulation {
       const from = houses[Math.floor(Math.random() * houses.length)];
       const to = houses[Math.floor(Math.random() * houses.length)];
       if (from === to) continue;
-      const path = this.computeRoute(from, to);
+      const path = this.computeRoute(from, to, false);
       if (!path) continue;
       this.cars.push({
         kind: "bike",
@@ -590,7 +610,9 @@ export class Simulation {
 
       // Avance d'un cran ; redémarrage et arrêt nets, sans gestion de vitesse.
       const speed =
-        Config.CAR_SPEED * (car.kind === "bike" ? Config.BIKE_SPEED_FACTOR : 1);
+        Config.CAR_SPEED *
+        (car.kind === "bike" ? Config.BIKE_SPEED_FACTOR : 1) *
+        (car.kind === "car" && this.segmentUsesSpeedway(car) ? Config.SPEEDWAY_SPEED_FACTOR : 1);
       car.t += dt * speed;
       if (car.t < 1) continue;
       car.t = 0;
@@ -637,6 +659,16 @@ export class Simulation {
 
   findBuilding(id: number): Building | null {
     return this.buildings.find((b) => b.id === id) ?? null;
+  }
+
+  private pieceForWaypoint(w: Waypoint): RoadPiece | null {
+    return w.road ? this.grid.pieceAtZ(w.x, w.y, w.z) : null;
+  }
+
+  private segmentUsesSpeedway(car: Car): boolean {
+    const a = this.pieceForWaypoint(car.path[Math.min(car.seg, car.path.length - 1)]);
+    const b = this.pieceForWaypoint(car.path[Math.min(car.seg + 1, car.path.length - 1)]);
+    return a?.kind === "speedway" || b?.kind === "speedway";
   }
 
   // Position interpolée d'une voiture (coordonnées grille continues + hauteur),
@@ -753,7 +785,11 @@ export class Simulation {
       const nx = x + DX[d];
       const ny = y + DY[d];
       if (!this.grid.inBounds(nx, ny)) continue;
-      if (this.grid.cell(nx, ny).pieces.some((p) => p.level === 0 && p.ramp === null)) {
+      if (
+        this.grid
+          .cell(nx, ny)
+          .pieces.some((p) => p.level === 0 && p.ramp === null && p.kind !== "speedway")
+      ) {
         return true;
       }
     }
@@ -845,7 +881,7 @@ export class Simulation {
     for (let x = 0; x < this.grid.size; x++) {
       for (let y = 0; y < this.grid.size; y++) {
         for (const p of this.grid.cell(x, y).pieces) {
-          pieces.push({ x, y, l: p.level, r: p.ramp, c: p.cost, m: p.mainAxis });
+          pieces.push({ x, y, l: p.level, r: p.ramp, c: p.cost, m: p.mainAxis, k: p.kind });
         }
         if (this.grid.cell(x, y).river) river.push({ x, y });
         if (this.grid.cell(x, y).tree) trees.push({ x, y });
@@ -883,7 +919,13 @@ export class Simulation {
         if (c.river) m.river.push(idx);
         if (c.tree) m.trees.push(idx);
         for (const p of c.pieces)
-          m.pieces.push({ cell: idx, level: p.level, ramp: p.ramp, mainAxis: p.mainAxis });
+          m.pieces.push({
+            cell: idx,
+            level: p.level,
+            ramp: p.ramp,
+            mainAxis: p.mainAxis,
+            kind: p.kind,
+          });
       }
     }
     for (const b of this.buildings) {
@@ -904,7 +946,8 @@ export class Simulation {
       s.grid.addPiece(Math.floor(p.cell / size), p.cell % size, {
         level: p.level,
         ramp: p.ramp,
-        cost: s.pieceCost(p.level, p.ramp),
+        kind: p.kind ?? "road",
+        cost: s.pieceCost(p.level, p.ramp, p.kind ?? "road"),
         mainAxis: p.mainAxis,
       });
     }
@@ -929,6 +972,7 @@ export class Simulation {
         s.grid.addPiece(p.x, p.y, {
           level: p.l,
           ramp: p.r as Dir | null,
+          kind: p.k ?? "road",
           cost: p.c,
           mainAxis: p.m,
         });
