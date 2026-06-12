@@ -42,7 +42,6 @@ send it to a friend and they'll start a fresh game on your layout.
 - Roads **cost credits**; demolishing **refunds 100%**. No scams here.
 - Let a business pile up more than 5 pending orders and a red danger bar starts
   filling. Hit 100% and it's **bankruptcy** — game over.
-- Every **90 seconds** the city hands you a grant. Spend it wisely.
 - New houses and businesses keep popping up, with new colors over time. The town
   always grows more houses than businesses — but the orders never stop.
 - **Bikes** wander from house to house just to get in everyone's way. They ride at

@@ -46,7 +46,6 @@ le callback `onMessage`). `Game` est le seul à relier les modules.
 - Crédits de départ : 300 (`START_CREDITS`).
 - Les routes coûtent des crédits ; la démolition **rembourse à 100 %** le prix payé
   (stocké sur chaque `RoadPiece.cost`).
-- Subvention de `PAYOUT_AMOUNT` (260 ¤) toutes les `PAYOUT_INTERVAL` (90 s).
 - Chaque livraison : +14 ¤ (`DELIVERY_CREDITS`) et +10 points (`DELIVERY_SCORE`).
 
 ### Commandes & game over

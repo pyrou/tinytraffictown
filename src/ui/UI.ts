@@ -32,8 +32,6 @@ const CFG_SECTIONS: [StringKey, ConfigNumKey[]][] = [
       "COST_ROAD",
       "COST_RAMP",
       "COST_PER_LEVEL",
-      "PAYOUT_INTERVAL",
-      "PAYOUT_AMOUNT",
       "DELIVERY_CREDITS",
       "DELIVERY_SCORE",
     ],
@@ -108,7 +106,6 @@ export class UI {
   private elCredits!: HTMLElement;
   private elScore!: HTMLElement;
   private elBest!: HTMLElement;
-  private elPayout!: HTMLElement;
   private btnPause!: HTMLButtonElement;
   private btnSpeed!: HTMLButtonElement;
   private btnLang!: HTMLButtonElement;
@@ -223,8 +220,7 @@ export class UI {
     this.elCredits = this.stat();
     this.elScore = this.stat();
     this.elBest = this.stat();
-    this.elPayout = this.stat();
-    top.append(this.elCredits, this.elScore, this.elBest, this.elPayout);
+    top.append(this.elCredits, this.elScore, this.elBest);
 
     const spacer = document.createElement("span");
     spacer.className = "spacer";
@@ -711,13 +707,6 @@ export class UI {
     this.setText(this.elCredits, `¤ ${sim.credits}`);
     this.setText(this.elScore, t("statScore", { n: sim.score }));
     this.setText(this.elBest, t("statBest", { n: this.game.best }));
-    this.setText(
-      this.elPayout,
-      t("statPayout", {
-        a: Config.PAYOUT_AMOUNT,
-        s: Math.ceil(sim.payoutTimer),
-      }),
-    );
     this.setText(
       this.elDebugDistance,
       t("statDistance", { v: this.formatDistance(sim.carDistanceCells) }),

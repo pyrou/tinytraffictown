@@ -15,8 +15,6 @@ export const Config = {
   COST_ROAD: 10, // route au sol
   COST_RAMP: 18, // rampe (base)
   COST_PER_LEVEL: 8, // surcoût par niveau d'élévation
-  PAYOUT_INTERVAL: 90, // secondes entre deux subventions
-  PAYOUT_AMOUNT: 260,
   DELIVERY_CREDITS: 14,
   DELIVERY_SCORE: 10,
 

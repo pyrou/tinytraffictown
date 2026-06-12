@@ -39,7 +39,6 @@ export interface SaveData {
   elapsed: number;
   carDistanceCells?: number; // anciennes sauvegardes : absent
   packagesPicked?: number; // anciennes sauvegardes : absent
-  payoutTimer: number;
   spawnTimer: number;
   spawnCount: number;
   unlockedColors: number;
@@ -62,7 +61,6 @@ export class Simulation {
   elapsed = 0;
   carDistanceCells = 0;
   packagesPicked = 0;
-  payoutTimer = Config.PAYOUT_INTERVAL;
   spawnTimer = Config.SPAWN_INTERVAL_START;
   dispatchTimer = 0;
   bikeTimer = Config.BIKE_INTERVAL;
@@ -201,14 +199,6 @@ export class Simulation {
   update(dt: number): void {
     if (this.gameOver) return;
     this.elapsed += dt;
-
-    // Subvention périodique
-    this.payoutTimer -= dt;
-    if (this.payoutTimer <= 0) {
-      this.payoutTimer += Config.PAYOUT_INTERVAL;
-      this.credits += Config.PAYOUT_AMOUNT;
-      this.onMessage?.(t("msgPayout", { a: Config.PAYOUT_AMOUNT }));
-    }
 
     // Nouveaux bâtiments
     this.spawnTimer -= dt;
@@ -872,7 +862,6 @@ export class Simulation {
       elapsed: this.elapsed,
       carDistanceCells: this.carDistanceCells,
       packagesPicked: this.packagesPicked,
-      payoutTimer: this.payoutTimer,
       spawnTimer: this.spawnTimer,
       spawnCount: this.spawnCount,
       unlockedColors: this.unlockedColors,
@@ -954,7 +943,6 @@ export class Simulation {
       s.elapsed = d.elapsed;
       s.carDistanceCells = d.carDistanceCells ?? 0;
       s.packagesPicked = d.packagesPicked ?? Math.floor(d.score / Config.DELIVERY_SCORE);
-      s.payoutTimer = d.payoutTimer;
       s.spawnTimer = d.spawnTimer;
       s.spawnCount = d.spawnCount;
       s.unlockedColors = d.unlockedColors;
