@@ -123,6 +123,9 @@ export class UI {
   private elStatus!: HTMLElement;
   private helpPanel!: HTMLElement;
   private debugPanel!: HTMLElement;
+  private elDebugDistance!: HTMLElement;
+  private elDebugPackages!: HTMLElement;
+  private elDebugDuration!: HTMLElement;
   private debugColor = 0;
   private moneyEntry!: TrEntry;
   private cfgRows: {
@@ -135,6 +138,9 @@ export class UI {
   private onboard!: HTMLElement;
   private elFinalScore!: HTMLElement;
   private elFinalBest!: HTMLElement;
+  private elFinalDistance!: HTMLElement;
+  private elFinalPackages!: HTMLElement;
+  private elFinalDuration!: HTMLElement;
   private btnShareX!: HTMLAnchorElement;
   private btnShareBsky!: HTMLAnchorElement;
   private confirmModal!: HTMLElement;
@@ -182,6 +188,19 @@ export class UI {
     return s;
   }
 
+  private formatDistance(cells: number): string {
+    return `${(cells * 0.05).toFixed(1)} km`;
+  }
+
+  private formatDuration(seconds: number): string {
+    const total = Math.floor(seconds);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
   // Évite de remplacer les nœuds texte à chaque frame, ce qui peut annuler
   // certains clics sur Safari quand le pointeur est posé sur le libellé.
   private setText(el: HTMLElement, text: string): void {
@@ -213,7 +232,7 @@ export class UI {
 
     this.btnPause = this.btn(null, "pauseTip", () => this.game.togglePause());
     this.btnSpeed = this.btn(null, "speedTip", () =>
-      this.game.setSpeed(this.game.speed === 1 ? 2 : 1),
+      this.game.setSpeed(this.game.speed === 1 ? 2 : this.game.speed === 2 ? 4 : 1),
     );
     this.btnLang = this.btn(null, "langTip", () => this.game.toggleLang());
 
@@ -322,6 +341,7 @@ export class UI {
 
     debugButtons.append(line1, line2);
     this.debugPanel.appendChild(debugButtons);
+    this.buildDebugStats();
     this.buildConfigSection();
     root.appendChild(this.debugPanel);
 
@@ -396,6 +416,12 @@ export class UI {
     this.reg({ el: p1, text: "overText" });
     this.elFinalScore = document.createElement("p");
     this.elFinalBest = document.createElement("p");
+    const finalStats = document.createElement("div");
+    finalStats.className = "over-stats";
+    this.elFinalDistance = document.createElement("p");
+    this.elFinalPackages = document.createElement("p");
+    this.elFinalDuration = document.createElement("p");
+    finalStats.append(this.elFinalDistance, this.elFinalPackages, this.elFinalDuration);
     const replay = this.btn("replay", "replayTip", () => this.game.newGame());
     const overActions = document.createElement("div");
     overActions.className = "actions";
@@ -405,7 +431,7 @@ export class UI {
     this.btnShareX = this.linkBtn("shareX", "shareXTip", "#");
     this.btnShareBsky = this.linkBtn("shareBluesky", "shareBlueskyTip", "#");
     overActions.append(replay, overStar, this.btnShareX, this.btnShareBsky);
-    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, overActions);
+    panel.append(h1, p1, this.elFinalScore, this.elFinalBest, finalStats, overActions);
     this.overlay.appendChild(panel);
     root.appendChild(this.overlay);
 
@@ -458,6 +484,19 @@ export class UI {
     cPanel.append(cTitle, cText, cActions);
     this.confirmModal.appendChild(cPanel);
     root.appendChild(this.confirmModal);
+  }
+
+  private buildDebugStats(): void {
+    const box = document.createElement("div");
+    box.className = "debug-stats";
+    const title = document.createElement("div");
+    title.className = "debug-title";
+    this.reg({ el: title, text: "debugStatsTitle" });
+    this.elDebugDistance = document.createElement("div");
+    this.elDebugPackages = document.createElement("div");
+    this.elDebugDuration = document.createElement("div");
+    box.append(title, this.elDebugDistance, this.elDebugPackages, this.elDebugDuration);
+    this.debugPanel.appendChild(box);
   }
 
   // Section « CONFIG » de la sidebar debug : édition de toutes les constantes
@@ -679,14 +718,33 @@ export class UI {
         s: Math.ceil(sim.payoutTimer),
       }),
     );
+    this.setText(
+      this.elDebugDistance,
+      t("statDistance", { v: this.formatDistance(sim.carDistanceCells) }),
+    );
+    this.setText(this.elDebugPackages, t("statPackages", { n: sim.packagesPicked }));
+    this.setText(
+      this.elDebugDuration,
+      t("statDuration", { v: this.formatDuration(sim.elapsed) }),
+    );
     this.setText(this.btnPause, this.game.paused ? t("resume") : t("pause"));
     this.setText(this.btnSpeed, `x${this.game.speed}`);
     this.setText(this.elStatus, this.game.message || t("ready"));
   }
 
   showGameOver(score: number, best: number): void {
+    const sim = this.game.sim;
     this.setText(this.elFinalScore, t("overScore", { n: score }));
     this.setText(this.elFinalBest, t("overBest", { n: best }));
+    this.setText(
+      this.elFinalDistance,
+      t("statDistance", { v: this.formatDistance(sim.carDistanceCells) }),
+    );
+    this.setText(this.elFinalPackages, t("statPackages", { n: sim.packagesPicked }));
+    this.setText(
+      this.elFinalDuration,
+      t("statDuration", { v: this.formatDuration(sim.elapsed) }),
+    );
     const msg = encodeURIComponent(t("shareScore", { n: score, url: Config.GAME_URL }));
     this.btnShareX.href = `https://x.com/intent/post?text=${msg}`;
     this.btnShareBsky.href = `https://bsky.app/intent/compose?text=${msg}`;

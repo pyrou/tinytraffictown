@@ -37,6 +37,8 @@ export interface SaveData {
   credits: number;
   score: number;
   elapsed: number;
+  carDistanceCells?: number; // anciennes sauvegardes : absent
+  packagesPicked?: number; // anciennes sauvegardes : absent
   payoutTimer: number;
   spawnTimer: number;
   spawnCount: number;
@@ -58,6 +60,8 @@ export class Simulation {
   credits = Config.START_CREDITS;
   score = 0;
   elapsed = 0;
+  carDistanceCells = 0;
+  packagesPicked = 0;
   payoutTimer = Config.PAYOUT_INTERVAL;
   spawnTimer = Config.SPAWN_INTERVAL_START;
   dispatchTimer = 0;
@@ -601,6 +605,7 @@ export class Simulation {
       if (car.t < 1) continue;
       car.t = 0;
       car.seg++;
+      if (car.kind === "car") this.carDistanceCells++;
       car.moving = false;
       car.stopServed = false;
       car.stopTimer = Config.YIELD_STOP_TIME;
@@ -625,6 +630,7 @@ export class Simulation {
           }
           this.credits += Config.DELIVERY_CREDITS;
           this.score += Config.DELIVERY_SCORE;
+          this.packagesPicked++;
           car.phase = "return";
           car.path = [...car.path].reverse();
           car.seg = 0;
@@ -864,6 +870,8 @@ export class Simulation {
       credits: this.credits,
       score: this.score,
       elapsed: this.elapsed,
+      carDistanceCells: this.carDistanceCells,
+      packagesPicked: this.packagesPicked,
       payoutTimer: this.payoutTimer,
       spawnTimer: this.spawnTimer,
       spawnCount: this.spawnCount,
@@ -944,6 +952,8 @@ export class Simulation {
       s.credits = d.credits;
       s.score = d.score;
       s.elapsed = d.elapsed;
+      s.carDistanceCells = d.carDistanceCells ?? 0;
+      s.packagesPicked = d.packagesPicked ?? Math.floor(d.score / Config.DELIVERY_SCORE);
       s.payoutTimer = d.payoutTimer;
       s.spawnTimer = d.spawnTimer;
       s.spawnCount = d.spawnCount;

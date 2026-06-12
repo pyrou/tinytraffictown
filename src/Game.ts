@@ -25,7 +25,7 @@ export class Game {
   audio: AudioManager;
 
   paused = false;
-  speed: 1 | 2 = 1;
+  speed: 1 | 2 | 4 = 1;
   best = 0;
   message = "";
 
@@ -58,7 +58,7 @@ export class Game {
 
     this.renderer = new Renderer(canvas);
     this.renderer.rot = opts.rotation;
-    this.speed = opts.speed as 1 | 2;
+    this.speed = opts.speed as 1 | 2 | 4;
 
     this.input = new Input(canvas, this);
     this.ui = new UI(root, this);
@@ -136,7 +136,7 @@ export class Game {
     this.paused = !this.paused;
   }
 
-  setSpeed(s: 1 | 2): void {
+  setSpeed(s: 1 | 2 | 4): void {
     this.speed = s;
     this.saveOpts();
   }

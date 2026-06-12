@@ -8,7 +8,7 @@ const fr = {
   pause: "⏸ Pause",
   resume: "▶ Reprendre",
   pauseTip: "Pause (Espace)",
-  speedTip: "Vitesse (1/2)",
+  speedTip: "Vitesse (1/2/4)",
   rotLeftTip: "Rotation caméra antihoraire",
   rotRightTip: "Rotation caméra horaire (R)",
   debugTip: "Menu de debug",
@@ -31,6 +31,9 @@ const fr = {
   statScore: "Score {n}",
   statBest: "Record {n}",
   statPayout: "Subvention +{a} dans {s}s",
+  statDistance: "Distance : {v}",
+  statPackages: "Colis récupérés : {n}",
+  statDuration: "Durée : {v}",
 
   // Barre d'outils
   toolRoad: "🛣 Route",
@@ -58,7 +61,7 @@ const fr = {
     "Mobile : deux doigts pour déplacer la caméra<br>" +
     "Molette / Q / E : niveau de hauteur<br>" +
     "R : rotation &nbsp;·&nbsp; T : sens de rampe<br>" +
-    "Espace : pause &nbsp;·&nbsp; 1 / 2 : vitesse<br>" +
+    "Espace : pause &nbsp;·&nbsp; 1 / 2 / 4 : vitesse<br>" +
     "Double-clic (route) : axe prioritaire d'un croisement en X<br>" +
     "Croisement : écart de 2 niveaux requis.<br>" +
     "Rivière : pont au niveau 1 minimum.",
@@ -77,6 +80,7 @@ const fr = {
   debugPurgeTip: "Vide toutes les commandes en attente et le danger",
   debugTraffic: "🚘 Clean",
   debugTrafficTip: "Détruit tous les véhicules en circulation",
+  debugStatsTitle: "STATS",
   colorTip: "Couleur {n}",
 
   // Sidebar debug : personnalisation de la Config
@@ -153,8 +157,8 @@ const fr = {
   cfg_DEBUG_CREDITS: "Crédits ajoutés par le bouton 💰 du menu debug.",
 
   // Écran de fin
-  overTitle: "FAILLITE !",
-  overText: "Une entreprise a croulé sous les commandes…",
+  overTitle: "GAME OVER",
+  overText: "Une entreprise a croulé sous les commandes.",
   overScore: "Score final : {n}",
   overBest: "Meilleur score : {n}",
   replay: "Rejouer",
@@ -224,7 +228,7 @@ const en: Record<StringKey, string> = {
   pause: "⏸ Pause",
   resume: "▶ Resume",
   pauseTip: "Pause (Space)",
-  speedTip: "Speed (1/2)",
+  speedTip: "Speed (1/2/4)",
   rotLeftTip: "Rotate camera counter-clockwise",
   rotRightTip: "Rotate camera clockwise (R)",
   debugTip: "Debug menu",
@@ -247,6 +251,9 @@ const en: Record<StringKey, string> = {
   statScore: "Score {n}",
   statBest: "Best {n}",
   statPayout: "Grant +{a} in {s}s",
+  statDistance: "Distance: {v}",
+  statPackages: "Packages picked up: {n}",
+  statDuration: "Duration: {v}",
 
   toolRoad: "🛣 Road",
   toolRoadTip: "Build a road (A)",
@@ -272,7 +279,7 @@ const en: Record<StringKey, string> = {
     "Mobile: two fingers to pan the camera<br>" +
     "Wheel / Q / E: height level<br>" +
     "R: rotate &nbsp;·&nbsp; T: ramp direction<br>" +
-    "Space: pause &nbsp;·&nbsp; 1 / 2: speed<br>" +
+    "Space: pause &nbsp;·&nbsp; 1 / 2 / 4: speed<br>" +
     "Double-click (road): priority axis of a 4-way junction<br>" +
     "Crossing: 2-level gap required.<br>" +
     "River: bridge at level 1 minimum.",
@@ -290,6 +297,7 @@ const en: Record<StringKey, string> = {
   debugPurgeTip: "Clear all pending orders and danger",
   debugTraffic: "🚘 Clean",
   debugTrafficTip: "Destroy all vehicles on the road",
+  debugStatsTitle: "STATS",
   colorTip: "Color {n}",
 
   cfgTitle: "CONFIG",
@@ -363,8 +371,8 @@ const en: Record<StringKey, string> = {
   cfg_AUTOSAVE_INTERVAL: "Seconds between two autosaves.",
   cfg_DEBUG_CREDITS: "Credits added by the 💰 button of the debug menu.",
 
-  overTitle: "BANKRUPT!",
-  overText: "A business collapsed under its orders…",
+  overTitle: "GAME OVER",
+  overText: "A business collapsed under its orders.",
   overScore: "Final score: {n}",
   overBest: "Best score: {n}",
   replay: "Play again",

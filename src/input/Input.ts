@@ -169,6 +169,9 @@ export class Input {
       case "2":
         this.game.setSpeed(2);
         break;
+      case "4":
+        this.game.setSpeed(4);
+        break;
       case "a":
         this.setTool("road");
         break;

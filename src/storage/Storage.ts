@@ -36,7 +36,7 @@ export function loadOptions(): Options {
       const o = JSON.parse(raw);
       return {
         rotation: o.rotation % 4 || 0,
-        speed: o.speed === 2 ? 2 : 1,
+        speed: o.speed === 4 ? 4 : o.speed === 2 ? 2 : 1,
         lang: o.lang === "fr" || o.lang === "en" ? o.lang : null,
         musicEnabled: o.musicEnabled !== false,
         sfxEnabled: o.sfxEnabled !== false,

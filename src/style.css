@@ -239,6 +239,21 @@ canvas#game {
   line-height: 1.2;
 }
 
+#debug .debug-stats {
+  padding: 5px 6px;
+  background: #e8e4dc;
+  border: 2px solid;
+  border-color: #6d6a64 #ffffff #ffffff #6d6a64;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+#debug .debug-stats .debug-title {
+  margin-bottom: 3px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
 #debug .cfg-head {
   display: flex;
   align-items: center;
@@ -431,6 +446,22 @@ canvas#game {
 #confirm-modal p {
   margin: 4px 0;
   font-size: 12px;
+}
+
+#overlay .over-stats {
+  margin: 12px auto 4px;
+  padding: 8px 10px;
+  max-width: 260px;
+  text-align: left;
+  background: #e8e4dc;
+  border: 2px solid;
+  border-color: #6d6a64 #ffffff #ffffff #6d6a64;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+}
+
+#overlay .over-stats p {
+  margin: 3px 0;
 }
 
 #onboard .device-note {
