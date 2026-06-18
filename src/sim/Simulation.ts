@@ -203,7 +203,7 @@ export class Simulation {
   // Boucle de simulation
   // ------------------------------------------------------------------
 
-  update(dt: number): void {
+  update(dt: number, fxDt = dt): void {
     if (this.gameOver) return;
     this.elapsed += dt;
 
@@ -252,7 +252,7 @@ export class Simulation {
       this.spawnBike();
     }
 
-    this.updateSpawnFx(dt);
+    this.updateSpawnFx(fxDt);
     this.moveCars(dt);
   }
 

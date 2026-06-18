@@ -91,7 +91,7 @@ export class Game {
     this.lastTime = t;
 
     if (!this.paused && !this.sim.gameOver) {
-      this.sim.update(dt * this.speed);
+      this.sim.update(dt * this.speed, dt);
       this.autosaveTimer -= dt;
       if (this.autosaveTimer <= 0) {
         this.autosaveTimer = Config.AUTOSAVE_INTERVAL;
