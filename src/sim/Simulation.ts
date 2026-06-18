@@ -52,7 +52,7 @@ export class Simulation {
   buildings: Building[] = [];
   cars: Car[] = [];
 
-  // Ondes de choc au sol (atterrissage d'une entreprise) : âge en secondes,
+  // Ondes de choc au sol (atterrissage d'un bâtiment) : âge en secondes,
   // purgées après IMPACT_RING_TIME. État transitoire, jamais sauvegardé.
   impacts: { x: number; y: number; age: number }[] = [];
 
@@ -256,7 +256,7 @@ export class Simulation {
     this.moveCars(dt);
   }
 
-  // Fait descendre les entreprises qui tombent du ciel (vitesse constante) et
+  // Fait descendre les bâtiments qui tombent du ciel (vitesse constante) et
   // vieillit les ondes de choc. Le son d'apparition est joué à l'impact.
   private updateSpawnFx(dt: number): void {
     for (const b of this.buildings) {
@@ -270,6 +270,10 @@ export class Simulation {
     }
     for (const im of this.impacts) im.age += dt;
     this.impacts = this.impacts.filter((im) => im.age < Config.IMPACT_RING_TIME);
+  }
+
+  private startSpawnFall(b: Building): void {
+    b.fallZ = Config.BIZ_FALL_HEIGHT;
   }
 
   // ------------------------------------------------------------------
@@ -732,10 +736,8 @@ export class Simulation {
     const spot = type === "house" ? this.findHouseSpot(color) : this.findSpot();
     if (!spot) return;
     const b = this.addBuilding(type, color, spot.x, spot.y);
-    // Une entreprise tombe du ciel : le son est joué à l'impact (updateSpawnFx),
-    // une maison apparaît sur place avec son son immédiat.
-    if (type === "biz") b.fallZ = Config.BIZ_FALL_HEIGHT;
-    else this.onBuildingSpawned?.();
+    // Le son est joué à l'impact (updateSpawnFx), une fois la chute terminée.
+    this.startSpawnFall(b);
     this.spawnCount++;
     if (
       this.spawnCount % Config.UNLOCK_EVERY === 0 &&
@@ -865,7 +867,7 @@ export class Simulation {
     const spot = type === "house" ? this.findHouseSpot(color) : this.findSpot();
     if (!spot) return false;
     const b = this.addBuilding(type, color, spot.x, spot.y);
-    if (type === "biz") b.fallZ = Config.BIZ_FALL_HEIGHT;
+    this.startSpawnFall(b);
     if (color >= this.unlockedColors) this.unlockedColors = color + 1;
     return true;
   }

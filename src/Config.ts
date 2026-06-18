@@ -50,11 +50,11 @@ export const Config = {
   UNLOCK_EVERY: 5, // nouveaux spawns avant de débloquer une couleur
   HOUSE_SURPLUS: 2, // maisons d'avance requises (par couleur) avant une entreprise
 
-  // --- Animation d'apparition des entreprises ---
+  // --- Animation d'apparition des bâtiments ---
   BIZ_FALL_HEIGHT: 16, // hauteur de départ de la chute (en niveaux Z_STEP)
   BIZ_FALL_SPEED: 26, // vitesse de chute constante (niveaux par seconde)
   IMPACT_RING_TIME: 0.7, // durée de l'onde de choc au sol (s)
-  IMPACT_RING_RADIUS: 3.5, // rayon final de l'onde (cases)
+  IMPACT_RING_RADIUS: 10, // rayon final de l'onde (cases)
 
   // --- Quartiers (placement des maisons) ---
   HOOD_JOIN_CHANCE: 0.75, // probabilité de rejoindre un quartier existant

@@ -585,21 +585,25 @@ export class Renderer {
   // ---- bâtiments ----
 
   private drawBuilding(cx: number, cy: number, b: Building): void {
-    if (b.type === "house") {
-      this.drawHouse(cx, cy, b);
-      return;
-    }
     if (b.fallZ) {
-      // Entreprise en chute : la tuile d'arrivée entière s'assombrit (ombre
+      // Bâtiment en chute : la tuile d'arrivée entière s'assombrit (ombre
       // "carrée" au sol), corps décalé en hauteur.
       const g = this.ctx;
       g.fillStyle = "rgba(0,0,0,0.22)";
       this.diamondPath(cx, cy, 0, [0, 0, 0, 0]);
       g.fill();
-      this.drawBiz(cx, cy - b.fallZ * Z, b, false);
+      this.drawLandedBuilding(cx, cy - b.fallZ * Z, b, false);
       return;
     }
-    this.drawBiz(cx, cy, b);
+    this.drawLandedBuilding(cx, cy, b, true);
+  }
+
+  private drawLandedBuilding(cx: number, cy: number, b: Building, sign: boolean): void {
+    if (b.type === "house") {
+      this.drawHouse(cx, cy, b);
+      return;
+    }
+    this.drawBiz(cx, cy, b, sign);
   }
 
   // Opacité du voile blanc d'une onde de choc sur la case (x,y) : l'anneau
