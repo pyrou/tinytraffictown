@@ -123,6 +123,7 @@ export class UI {
   private btnOptLang!: HTMLButtonElement;
   private btnOptMusic!: HTMLButtonElement;
   private btnOptAudio!: HTMLButtonElement;
+  private debugUnlocked = false;
   private elLevel!: HTMLElement;
   private btnDir!: HTMLButtonElement;
   private elStatus!: HTMLElement;
@@ -168,11 +169,11 @@ export class UI {
   private btn(
     text: StringKey | null,
     title: StringKey | null,
-    onClick: () => void,
+    onClick: (e: MouseEvent) => void,
   ): HTMLButtonElement {
     const b = document.createElement("button");
     b.addEventListener("click", (e) => {
-      onClick();
+      onClick(e);
       (e.currentTarget as HTMLButtonElement).blur();
     });
     if (text || title) this.reg({ el: b, text: text ?? undefined, title: title ?? undefined });
@@ -243,7 +244,7 @@ export class UI {
     );
     this.btnLang = this.btn(null, "langTip", () => this.game.toggleLang());
 
-    this.optionsBtn = this.btn("optionsBtn", "optionsBtnTip", () => this.toggleOptionsMenu());
+    this.optionsBtn = this.btn("optionsBtn", "optionsBtnTip", (e) => this.toggleOptionsMenu(e));
     this.optionsMenu = document.createElement("div");
     this.optionsMenu.id = "options-menu";
     this.optionsMenu.className = "panel hidden";
@@ -664,6 +665,7 @@ export class UI {
       const item = document.createElement("button");
       item.className = "menu-item";
       this.reg({ el: item, text });
+      this.setText(item, t(text));
       item.addEventListener("click", () => {
         onClick();
         this.hideOptionsMenu();
@@ -683,9 +685,11 @@ export class UI {
       return item;
     };
 
-    this.optionsMenu.appendChild(
-      staticBtn("optionsDebug", () => this.debugPanel.classList.toggle("hidden")),
-    );
+    if (this.debugUnlocked) {
+      this.optionsMenu.appendChild(
+        staticBtn("optionsDebug", () => this.debugPanel.classList.toggle("hidden")),
+      );
+    }
 
     this.btnOptLang = stateBtn(() => this.game.toggleLang());
     this.btnOptMusic = stateBtn(() => this.game.toggleMusic());
@@ -706,7 +710,11 @@ export class UI {
     this.setText(this.btnOptAudio, t("optionsAudio", { v: onOff(this.game.audio.isSfxEnabled()) }));
   }
 
-  private toggleOptionsMenu(): void {
+  private toggleOptionsMenu(e: MouseEvent): void {
+    if ((e.metaKey || e.ctrlKey) && !this.debugUnlocked) {
+      this.debugUnlocked = true;
+      this.buildOptionsMenu();
+    }
     this.optionsMenu.classList.toggle("hidden");
   }
 
