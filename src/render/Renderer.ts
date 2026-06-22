@@ -202,7 +202,7 @@ export class Renderer {
           // En chute, la clé suit la hauteur : le bâtiment passe devant les ponts.
           drawables.push({
             key: base + (b.fallZ ?? 0) * 2 + 0.5,
-            draw: () => this.drawBuilding(cx, cy, b),
+            draw: () => this.drawBuilding(cx, cy, b, sim.infiniteMode),
           });
         }
         const tree = cell.tree;
@@ -588,7 +588,7 @@ export class Renderer {
 
   // ---- bâtiments ----
 
-  private drawBuilding(cx: number, cy: number, b: Building): void {
+  private drawBuilding(cx: number, cy: number, b: Building, infiniteMode: boolean): void {
     if (b.fallZ) {
       // Bâtiment en chute : la tuile d'arrivée entière s'assombrit (ombre
       // "carrée" au sol), corps décalé en hauteur.
@@ -596,18 +596,24 @@ export class Renderer {
       g.fillStyle = "rgba(0,0,0,0.22)";
       this.diamondPath(cx, cy, 0, [0, 0, 0, 0]);
       g.fill();
-      this.drawLandedBuilding(cx, cy - b.fallZ * Z, b, false);
+      this.drawLandedBuilding(cx, cy - b.fallZ * Z, b, false, infiniteMode);
       return;
     }
-    this.drawLandedBuilding(cx, cy, b, true);
+    this.drawLandedBuilding(cx, cy, b, true, infiniteMode);
   }
 
-  private drawLandedBuilding(cx: number, cy: number, b: Building, sign: boolean): void {
+  private drawLandedBuilding(
+    cx: number,
+    cy: number,
+    b: Building,
+    sign: boolean,
+    infiniteMode: boolean,
+  ): void {
     if (b.type === "house") {
       this.drawHouse(cx, cy, b);
       return;
     }
-    this.drawBiz(cx, cy, b, sign);
+    this.drawBiz(cx, cy, b, sign, infiniteMode);
   }
 
   // Opacité du voile blanc d'une onde de choc sur la case (x,y) : l'anneau
@@ -740,7 +746,7 @@ export class Renderer {
     g.fillRect(cx - 6, cy - 4, 3, 3);
   }
 
-  private drawBiz(cx: number, cy: number, b: Building, shadow = true): void {
+  private drawBiz(cx: number, cy: number, b: Building, shadow = true, infiniteMode = false): void {
     const g = this.ctx;
     const col = Config.COLORS[b.color];
     const dark = Config.COLORS_DARK[b.color];
@@ -796,13 +802,13 @@ export class Renderer {
     // pastilles de commandes en attente
     const pips = Math.min(b.orders, Config.MAX_ORDER_PIPS);
     for (let i = 0; i < pips; i++) {
-      g.fillStyle = b.orders > Config.DANGER_THRESHOLD ? "#ff5a4e" : "#fff6d8";
+      g.fillStyle = !infiniteMode && b.orders > Config.DANGER_THRESHOLD ? "#ff5a4e" : "#fff6d8";
       g.fillRect(cx - 14 + i * 4, yT - 12, 3, 3);
       g.strokeStyle = "#00000088";
       g.strokeRect(cx - 14.5 + i * 4, yT - 12.5, 4, 4);
     }
     // barre de danger
-    if (b.danger > 0) {
+    if (!infiniteMode && b.danger > 0) {
       g.fillStyle = "#1a1a1a";
       g.fillRect(cx - 12, yT - 17, 24, 3);
       g.fillStyle = "#ff3b2e";
