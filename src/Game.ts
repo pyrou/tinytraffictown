@@ -213,6 +213,15 @@ export class Game {
     this.setMessage(t("msgNewGame"));
   }
 
+  continueAfterVictory(): void {
+    this.sim.continueAfterVictory();
+    this.gameOverShown = false;
+    this.paused = false;
+    this.ui.hideGameOver();
+    this.setMessage(t("msgInfiniteMode"));
+    this.autosave();
+  }
+
   setMessage(m: string): void {
     this.message = m;
     this.msgTimer = 4;
@@ -266,7 +275,7 @@ export class Game {
   // ---- persistance ----
 
   private autosave(): void {
-    if (!this.sim.gameOver) saveGame(this.sim.serialize());
+    if (!this.sim.gameOver || this.sim.gameWon) saveGame(this.sim.serialize());
   }
 
   private saveOpts(): void {
@@ -285,7 +294,7 @@ export class Game {
       this.best = this.sim.score;
       saveBest(this.best);
     }
-    clearGame();
-    this.ui.showGameOver(this.sim.score, this.best);
+    if (!this.sim.gameWon) clearGame();
+    this.ui.showGameOver(this.sim.score, this.best, this.sim.gameWon);
   }
 }

@@ -109,6 +109,11 @@ export class UI {
   private elCredits!: HTMLElement;
   private elScore!: HTMLElement;
   private elBest!: HTMLElement;
+  private sidePanels!: HTMLElement;
+  private missionsPanel!: HTMLElement;
+  private elMissionColors!: HTMLElement;
+  private elMissionDistance!: HTMLElement;
+  private elMissionPackages!: HTMLElement;
   private btnPause!: HTMLButtonElement;
   private btnSpeed!: HTMLButtonElement;
   private btnLang!: HTMLButtonElement;
@@ -142,6 +147,7 @@ export class UI {
   private elFinalDistance!: HTMLElement;
   private elFinalPackages!: HTMLElement;
   private elFinalDuration!: HTMLElement;
+  private btnContinueInfinite!: HTMLButtonElement;
   private btnShareX!: HTMLAnchorElement;
   private btnShareBsky!: HTMLAnchorElement;
   private confirmModal!: HTMLElement;
@@ -248,6 +254,8 @@ export class UI {
       this.btnSpeed,
       this.btn(null, "rotLeftTip", () => this.game.rotate(-1)),
       this.btn(null, "rotRightTip", () => this.game.rotate(1)),
+      this.btn("missionsNavBtn", "missionsToggleTip", () => this.toggleMissions()),
+      this.btn("helpShortBtn", "helpBtnTip", () => this.toggleHelp()),
       this.optionsBtn,
       this.btn("shareBtn", "shareTip", () => this.game.shareMap()),
       this.btn("newGame", "newGameTip", () => this.showConfirmNewGame()),
@@ -259,33 +267,48 @@ export class UI {
     root.appendChild(top);
     root.appendChild(this.optionsMenu);
 
+    this.sidePanels = document.createElement("div");
+    this.sidePanels.id = "side-panels";
+    root.appendChild(this.sidePanels);
+
+    // --- missions ---
+    this.missionsPanel = document.createElement("div");
+    this.missionsPanel.id = "missions";
+    this.missionsPanel.className = "panel";
+    const missionsHeader = document.createElement("div");
+    missionsHeader.className = "panel-head";
+    const missionsClose = this.btn(null, "closeMissionsTip", () => this.hideMissions());
+    missionsClose.className = "close";
+    missionsClose.textContent = "×";
+    const missionsTitle = document.createElement("div");
+    missionsTitle.className = "panel-title";
+    this.reg({ el: missionsTitle, text: "missionsTitle" });
+    missionsHeader.append(missionsTitle, missionsClose);
+    this.elMissionColors = document.createElement("div");
+    this.elMissionDistance = document.createElement("div");
+    this.elMissionPackages = document.createElement("div");
+    this.missionsPanel.append(
+      missionsHeader,
+      this.elMissionColors,
+      this.elMissionDistance,
+      this.elMissionPackages,
+    );
+    this.sidePanels.appendChild(this.missionsPanel);
+
     // --- menu de debug ---
     this.debugPanel = document.createElement("div");
     this.debugPanel.id = "debug";
     this.debugPanel.className = "panel hidden";
     const debugHeader = document.createElement("div");
-    debugHeader.style.display = "flex";
-    debugHeader.style.justifyContent = "space-between";
-    debugHeader.style.alignItems = "center";
-    debugHeader.style.marginBottom = "6px";
+    debugHeader.className = "panel-head";
     const dTitle = document.createElement("div");
-    dTitle.className = "debug-title";
+    dTitle.className = "panel-title";
     dTitle.textContent = "DEBUG";
     const debugClose = this.btn(null, "closeDebugTip", () =>
       this.debugPanel.classList.add("hidden"),
     );
     debugClose.className = "close";
     debugClose.textContent = "×";
-    debugClose.style.position = "relative";
-    debugClose.style.top = "auto";
-    debugClose.style.right = "auto";
-    debugClose.style.margin = "0";
-    debugClose.style.width = "18px";
-    debugClose.style.height = "17px";
-    debugClose.style.minWidth = "18px";
-    debugClose.style.padding = "0";
-    debugClose.style.lineHeight = "11px";
-    debugClose.style.fontSize = "12px";
     debugHeader.append(dTitle, debugClose);
     this.debugPanel.appendChild(debugHeader);
 
@@ -420,13 +443,19 @@ export class UI {
     this.helpPanel = document.createElement("div");
     this.helpPanel.id = "help";
     this.helpPanel.className = "panel";
+    const helpHeader = document.createElement("div");
+    helpHeader.className = "panel-head";
     const helpClose = this.btn(null, "closeHelpTip", () => this.hideHelp());
     helpClose.className = "close";
     helpClose.textContent = "×";
+    const helpTitle = document.createElement("div");
+    helpTitle.className = "panel-title";
+    this.reg({ el: helpTitle, text: "helpTitle" });
+    helpHeader.append(helpTitle, helpClose);
     const helpBody = document.createElement("div");
     this.reg({ el: helpBody, html: "help" });
-    this.helpPanel.append(helpClose, helpBody);
-    root.appendChild(this.helpPanel);
+    this.helpPanel.append(helpHeader, helpBody);
+    this.sidePanels.appendChild(this.helpPanel);
 
     // --- écran de fin ---
     this.overlay = document.createElement("div");
@@ -447,6 +476,9 @@ export class UI {
     this.elFinalDuration = document.createElement("p");
     finalStats.append(this.elFinalDistance, this.elFinalPackages, this.elFinalDuration);
     const replay = this.btn("replay", "replayTip", () => this.game.newGame());
+    this.btnContinueInfinite = this.btn("continueInfinite", "continueInfiniteTip", () =>
+      this.game.continueAfterVictory(),
+    );
     const overActions = document.createElement("div");
     overActions.className = "actions";
     const overStar = this.linkBtn("starGithub", "starGithubTip", Config.GITHUB_URL);
@@ -454,7 +486,13 @@ export class UI {
     // une fois le score final connu.
     this.btnShareX = this.linkBtn("shareX", "shareXTip", "#");
     this.btnShareBsky = this.linkBtn("shareBluesky", "shareBlueskyTip", "#");
-    overActions.append(replay, overStar, this.btnShareX, this.btnShareBsky);
+    overActions.append(
+      this.btnContinueInfinite,
+      replay,
+      overStar,
+      this.btnShareX,
+      this.btnShareBsky,
+    );
     panel.append(h1, p1, this.elFinalScore, this.elFinalBest, finalStats, overActions);
     this.overlay.appendChild(panel);
     root.appendChild(this.overlay);
@@ -645,7 +683,6 @@ export class UI {
       return item;
     };
 
-    this.optionsMenu.appendChild(staticBtn("optionsHelp", () => this.showHelp()));
     this.optionsMenu.appendChild(
       staticBtn("optionsDebug", () => this.debugPanel.classList.toggle("hidden")),
     );
@@ -705,8 +742,16 @@ export class UI {
     this.helpPanel.classList.add("hidden");
   }
 
-  private showHelp(): void {
-    this.helpPanel.classList.remove("hidden");
+  private hideMissions(): void {
+    this.missionsPanel.classList.add("hidden");
+  }
+
+  private toggleHelp(): void {
+    this.helpPanel.classList.toggle("hidden");
+  }
+
+  private toggleMissions(): void {
+    this.missionsPanel.classList.toggle("hidden");
   }
 
   // Ré-applique tous les textes traduits (appelé au changement de langue).
@@ -791,14 +836,50 @@ export class UI {
       this.elDebugDuration,
       t("statDuration", { v: this.formatDuration(sim.elapsed) }),
     );
+    const colorsDone = sim.missionColorsDone();
+    const distanceDone = sim.carDistanceCells >= Config.MISSION_DISTANCE_CELLS;
+    const packagesDone = sim.packagesPicked >= Config.MISSION_PACKAGES;
+    this.elMissionColors.classList.toggle("done", colorsDone);
+    this.elMissionDistance.classList.toggle("done", distanceDone);
+    this.elMissionPackages.classList.toggle("done", packagesDone);
+    this.setText(
+      this.elMissionColors,
+      t("missionColors", {
+        mark: colorsDone ? "✓" : "□",
+        n: sim.deliveredColorCount(),
+        total: Config.COLORS.length,
+      }),
+    );
+    this.setText(
+      this.elMissionDistance,
+      t("missionDistance", {
+        mark: distanceDone ? "✓" : "□",
+        v: this.formatDistance(sim.carDistanceCells),
+        total: this.formatDistance(Config.MISSION_DISTANCE_CELLS),
+      }),
+    );
+    this.setText(
+      this.elMissionPackages,
+      t("missionPackages", {
+        mark: packagesDone ? "✓" : "□",
+        n: Math.min(sim.packagesPicked, Config.MISSION_PACKAGES),
+        total: Config.MISSION_PACKAGES,
+        points: Config.MISSION_PACKAGES * Config.DELIVERY_SCORE,
+      }),
+    );
     this.setText(this.btnPause, this.game.paused ? t("resume") : t("pause"));
     this.setText(this.btnSpeed, `x${this.game.speed}`);
     this.setText(this.elStatus, this.game.message || t("ready"));
     this.refreshTools();
   }
 
-  showGameOver(score: number, best: number): void {
+  showGameOver(score: number, best: number, won: boolean): void {
     const sim = this.game.sim;
+    const title = this.overlay.querySelector("h1");
+    const text = this.overlay.querySelector("p");
+    if (title) this.setText(title as HTMLElement, t(won ? "winTitle" : "overTitle"));
+    if (text) this.setText(text as HTMLElement, t(won ? "winText" : "overText"));
+    this.btnContinueInfinite.hidden = !won;
     this.setText(this.elFinalScore, t("overScore", { n: score }));
     this.setText(this.elFinalBest, t("overBest", { n: best }));
     this.setText(

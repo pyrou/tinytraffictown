@@ -39,6 +39,9 @@ export interface SaveData {
   elapsed: number;
   carDistanceCells?: number; // anciennes sauvegardes : absent
   packagesPicked?: number; // anciennes sauvegardes : absent
+  deliveredColorsMask?: number; // anciennes sauvegardes : absent
+  gameWon?: boolean; // anciennes sauvegardes : absent
+  infiniteMode?: boolean; // anciennes sauvegardes : absent
   spawnTimer: number;
   spawnCount: number;
   unlockedColors: number;
@@ -61,12 +64,15 @@ export class Simulation {
   elapsed = 0;
   carDistanceCells = 0;
   packagesPicked = 0;
+  deliveredColorsMask = 0;
   spawnTimer = Config.SPAWN_INTERVAL_START;
   dispatchTimer = 0;
   bikeTimer = Config.BIKE_INTERVAL;
   spawnCount = 0;
   unlockedColors = 2;
   gameOver = false;
+  gameWon = false;
+  infiniteMode = false;
   nextId = 1;
 
   onMessage: ((msg: string) => void) | null = null;
@@ -243,7 +249,7 @@ export class Simulation {
       } else {
         b.danger = Math.max(0, b.danger - dt / Config.DANGER_DECAY_TIME);
       }
-      if (b.danger >= 1) {
+      if (b.danger >= 1 && !this.infiniteMode) {
         this.gameOver = true;
       }
     }
@@ -631,7 +637,10 @@ export class Simulation {
       if (car.t < 1) continue;
       car.t = 0;
       car.seg++;
-      if (car.kind === "car") this.carDistanceCells++;
+      if (car.kind === "car") {
+        this.carDistanceCells++;
+        this.checkVictory();
+      }
       car.moving = false;
       car.stopServed = false;
       car.stopTimer = Config.YIELD_STOP_TIME;
@@ -657,6 +666,8 @@ export class Simulation {
           this.credits += Config.DELIVERY_CREDITS;
           this.score += Config.DELIVERY_SCORE;
           this.packagesPicked++;
+          this.deliveredColorsMask |= 1 << car.color;
+          this.checkVictory();
           car.phase = "return";
           car.path = [...car.path].reverse();
           car.seg = 0;
@@ -669,6 +680,45 @@ export class Simulation {
         }
       }
     }
+  }
+
+  private checkVictory(): void {
+    if (this.gameOver || this.gameWon) return;
+    if (this.allMissionsComplete()) {
+      this.gameWon = true;
+      this.gameOver = true;
+      this.onMessage?.(t("msgVictory"));
+    }
+  }
+
+  continueAfterVictory(): void {
+    if (!this.gameWon) return;
+    this.infiniteMode = true;
+    this.gameOver = false;
+    for (const b of this.buildings) {
+      if (b.type === "biz") b.danger = 0;
+    }
+  }
+
+  allMissionsComplete(): boolean {
+    return (
+      this.missionColorsDone() &&
+      this.carDistanceCells >= Config.MISSION_DISTANCE_CELLS &&
+      this.packagesPicked >= Config.MISSION_PACKAGES
+    );
+  }
+
+  missionColorsDone(): boolean {
+    const allColorsMask = (1 << Config.COLORS.length) - 1;
+    return (this.deliveredColorsMask & allColorsMask) === allColorsMask;
+  }
+
+  deliveredColorCount(): number {
+    let n = 0;
+    for (let c = 0; c < Config.COLORS.length; c++) {
+      if (this.deliveredColorsMask & (1 << c)) n++;
+    }
+    return n;
   }
 
   findBuilding(id: number): Building | null {
@@ -948,6 +998,9 @@ export class Simulation {
       elapsed: this.elapsed,
       carDistanceCells: this.carDistanceCells,
       packagesPicked: this.packagesPicked,
+      deliveredColorsMask: this.deliveredColorsMask,
+      gameWon: this.gameWon,
+      infiniteMode: this.infiniteMode,
       spawnTimer: this.spawnTimer,
       spawnCount: this.spawnCount,
       unlockedColors: this.unlockedColors,
@@ -1041,6 +1094,10 @@ export class Simulation {
       s.elapsed = d.elapsed;
       s.carDistanceCells = d.carDistanceCells ?? 0;
       s.packagesPicked = d.packagesPicked ?? Math.floor(d.score / Config.DELIVERY_SCORE);
+      s.deliveredColorsMask = d.deliveredColorsMask ?? 0;
+      s.gameWon = d.gameWon ?? false;
+      s.infiniteMode = d.infiniteMode ?? false;
+      s.gameOver = s.gameWon && !s.infiniteMode;
       s.spawnTimer = d.spawnTimer;
       s.spawnCount = d.spawnCount;
       s.unlockedColors = d.unlockedColors;
@@ -1048,6 +1105,7 @@ export class Simulation {
     } catch {
       return new Simulation(true);
     }
+    s.checkVictory();
     return s;
   }
 }

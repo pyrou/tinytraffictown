@@ -20,6 +20,10 @@ export const Config = {
   DELIVERY_CREDITS: 14,
   DELIVERY_SCORE: 10,
 
+  // --- Missions ---
+  MISSION_DISTANCE_CELLS: 10000, // distance totale requise (cases) : 500 km à 0,05 km/case
+  MISSION_PACKAGES: 500, // colis récupérés requis pour gagner
+
   // --- Commandes & danger ---
   ORDER_INTERVAL: 10, // secondes entre commandes (base, par entreprise)
   ORDER_MIN_FACTOR: 0.45, // facteur minimum (difficulté max)

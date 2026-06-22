@@ -143,7 +143,72 @@ canvas#game {
   color: #2a2a2a;
 }
 
+#side-panels {
+  position: absolute;
+  top: 48px;
+  right: 6px;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+}
+
+#missions {
+  width: 100%;
+  padding: 6px 8px;
+  background: #d4d0c8;
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+#missions.hidden {
+  display: none;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.panel-title {
+  color: #6d2a26;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-align: left;
+}
+
+.panel-head button.close {
+  margin: 0;
+  padding: 0;
+  width: 18px;
+  height: 17px;
+  min-width: 18px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  line-height: 11px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+#missions .done {
+  color: #1d6f35;
+  font-weight: bold;
+}
+
 @media (max-width: 760px) {
+  #side-panels {
+    top: 84px;
+    left: 6px;
+    right: auto;
+    width: min(264px, calc(100% - 12px));
+  }
+
   #status {
     bottom: 44px;
     left: 6px;
@@ -153,31 +218,14 @@ canvas#game {
 }
 
 #help {
-  position: absolute;
-  top: 48px;
-  right: 6px;
-  padding: 20px 8px 5px;
+  padding: 6px 8px 5px;
   color: #444;
   line-height: 1.5;
-  max-width: 230px;
+  width: 100%;
 }
 
 #help.hidden {
   display: none;
-}
-
-#help button.close {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  margin: 0;
-  padding: 0;
-  width: 18px;
-  height: 17px;
-  min-width: 18px;
-  line-height: 11px;
-  font-size: 12px;
-  font-weight: bold;
 }
 
 /* ---- sidebar de debug ---- */
@@ -397,6 +445,7 @@ canvas#game {
   gap: 3px;
   padding: 6px 8px;
   min-width: 140px;
+  z-index: 6;
 }
 
 #options-menu.hidden {
