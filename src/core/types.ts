@@ -5,6 +5,7 @@ export const DY = [0, 1, 0, -1] as const;
 export const opp = (d: Dir): Dir => (((d + 2) % 4) as Dir);
 
 export type RoadKind = "road" | "speedway";
+export type TreeKind = "pine" | "leafy";
 
 // Un segment de route dans une cellule.
 // level = niveau de la base ; ramp = direction ascendante (null = plat).

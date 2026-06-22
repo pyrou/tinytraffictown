@@ -1,5 +1,5 @@
 import { Config } from "./Config";
-import type { Dir, RoadKind } from "./core/types";
+import type { BuildingType, Dir, RoadKind, TreeKind } from "./core/types";
 import { getLang, setLang, t } from "./i18n";
 import { Input } from "./input/Input";
 import { Renderer } from "./render/Renderer";
@@ -129,7 +129,7 @@ export class Game {
   }
 
   remove(x: number, y: number): void {
-    const r = this.sim.tryRemove(x, y);
+    const r = this.sim.tryRemove(x, y, this.ui.isDebugOpen());
     if (r.msg) this.setMessage(r.msg);
   }
 
@@ -228,9 +228,19 @@ export class Game {
     this.renderer.resize();
   }
 
-  debugSpawnBuilding(type: "house" | "biz", color: number): void {
-    const ok = this.sim.debugSpawnBuilding(type, color);
+  debugPlaceBuilding(type: BuildingType, x: number, y: number): void {
+    const ok = this.sim.debugPlaceBuilding(type, this.ui.getDebugColor(), x, y);
     this.setMessage(t(ok ? (type === "house" ? "dbgHouseAdded" : "dbgBizAdded") : "dbgNoSpot"));
+  }
+
+  debugPlaceRiver(x: number, y: number): void {
+    const ok = this.sim.debugPlaceRiver(x, y);
+    this.setMessage(t(ok ? "dbgRiverAdded" : "dbgNoSpot"));
+  }
+
+  debugPlaceTree(kind: TreeKind, x: number, y: number): void {
+    const ok = this.sim.debugPlaceTree(kind, x, y);
+    this.setMessage(t(ok ? "dbgTreeAdded" : "dbgNoSpot"));
   }
 
   debugSpawnBike(): void {

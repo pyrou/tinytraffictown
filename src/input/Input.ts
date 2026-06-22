@@ -1,8 +1,17 @@
 import { Config } from "../Config";
-import type { Dir } from "../core/types";
+import type { Dir, TreeKind } from "../core/types";
 import type { Game } from "../Game";
 
-export type Tool = "road" | "speedway" | "ramp" | "bulldoze";
+export type Tool =
+  | "road"
+  | "speedway"
+  | "ramp"
+  | "bulldoze"
+  | "debugHouse"
+  | "debugBiz"
+  | "debugRiver"
+  | "debugTreePine"
+  | "debugTreeLeafy";
 
 export class Input {
   tool: Tool = "road";
@@ -76,7 +85,7 @@ export class Input {
     if (e.button !== 0) return;
     const { px, py } = this.canvasPos(e);
     const cell = this.game.renderer.screenToCell(px, py);
-    this.painting = true;
+    this.painting = this.isBrushTool();
     if (cell) this.act(cell.x, cell.y);
   }
 
@@ -150,9 +159,20 @@ export class Input {
       this.game.place(x, y, this.level, null, this.tool === "speedway" ? "speedway" : "road");
     } else if (this.tool === "ramp") {
       this.game.place(x, y, this.level, this.rampDir);
+    } else if (this.tool === "debugHouse" || this.tool === "debugBiz") {
+      this.game.debugPlaceBuilding(this.tool === "debugHouse" ? "house" : "biz", x, y);
+    } else if (this.tool === "debugRiver") {
+      this.game.debugPlaceRiver(x, y);
+    } else if (this.tool === "debugTreePine" || this.tool === "debugTreeLeafy") {
+      const kind: TreeKind = this.tool === "debugTreePine" ? "pine" : "leafy";
+      this.game.debugPlaceTree(kind, x, y);
     } else {
       this.game.remove(x, y);
     }
+  }
+
+  private isBrushTool(): boolean {
+    return this.tool === "road" || this.tool === "speedway" || this.tool === "ramp" || this.tool === "bulldoze";
   }
 
   private onKey(e: KeyboardEvent): void {

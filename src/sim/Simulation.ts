@@ -2,7 +2,7 @@ import { Config } from "../Config";
 import { Grid } from "../core/Grid";
 import { findPath, nodeKey } from "../core/Pathfinder";
 import type { PathNode } from "../core/Pathfinder";
-import type { Building, Dir, RoadKind, RoadPiece } from "../core/types";
+import type { Building, Dir, RoadKind, RoadPiece, TreeKind } from "../core/types";
 import { DX, DY, opp } from "../core/types";
 import { t } from "../i18n";
 import type { MapData } from "../storage/MapCode";
@@ -44,7 +44,7 @@ export interface SaveData {
   unlockedColors: number;
   nextId: number;
   river?: { x: number; y: number }[]; // absent dans les anciennes sauvegardes
-  trees?: { x: number; y: number }[]; // absent dans les anciennes sauvegardes
+  trees?: { x: number; y: number; k?: TreeKind }[]; // absent / k absent dans les anciennes sauvegardes
 }
 
 export class Simulation {
@@ -116,7 +116,9 @@ export class Simulation {
     for (let x = 0; x < this.grid.size; x++) {
       for (let y = 0; y < this.grid.size; y++) {
         const c = this.grid.cell(x, y);
-        if (!c.river && Math.random() < Config.TREE_DENSITY) c.tree = true;
+        if (!c.river && Math.random() < Config.TREE_DENSITY) {
+          c.tree = Math.random() < 0.5 ? "pine" : "leafy";
+        }
       }
     }
   }
@@ -181,7 +183,7 @@ export class Simulation {
     return { ok: true, msg: t("msgBuilt", { c: cost }) };
   }
 
-  tryRemove(x: number, y: number): { ok: boolean; msg: string } {
+  tryRemove(x: number, y: number, debugOpen = false): { ok: boolean; msg: string } {
     if (this.gameOver) return { ok: false, msg: "" };
     if (!this.grid.inBounds(x, y)) return { ok: false, msg: "" };
     const p = this.grid.removeTopPiece(x, y);
@@ -191,6 +193,14 @@ export class Simulation {
       if (c.tree) {
         c.tree = false;
         return { ok: true, msg: t("msgTreeCut") };
+      }
+      if (debugOpen && c.building) {
+        this.debugRemoveBuilding(c.building);
+        return { ok: true, msg: t("dbgBuildingRemoved") };
+      }
+      if (debugOpen && c.river) {
+        c.river = false;
+        return { ok: true, msg: t("dbgRiverRemoved") };
       }
       return { ok: false, msg: t("msgNothingHere") };
     }
@@ -863,13 +873,50 @@ export class Simulation {
     return n;
   }
 
-  debugSpawnBuilding(type: "house" | "biz", color: number): boolean {
-    const spot = type === "house" ? this.findHouseSpot(color) : this.findSpot();
-    if (!spot) return false;
-    const b = this.addBuilding(type, color, spot.x, spot.y);
+  debugCanPlaceBuilding(x: number, y: number): boolean {
+    if (!this.grid.inBounds(x, y)) return false;
+    const c = this.grid.cell(x, y);
+    return !c.building && c.pieces.length === 0 && !c.river;
+  }
+
+  debugPlaceBuilding(type: "house" | "biz", color: number, x: number, y: number): boolean {
+    if (!this.debugCanPlaceBuilding(x, y)) return false;
+    const b = this.addBuilding(type, color, x, y);
     this.startSpawnFall(b);
     if (color >= this.unlockedColors) this.unlockedColors = color + 1;
     return true;
+  }
+
+  debugCanPlaceGround(x: number, y: number): boolean {
+    if (!this.grid.inBounds(x, y)) return false;
+    const c = this.grid.cell(x, y);
+    return !c.building && c.pieces.length === 0;
+  }
+
+  debugPlaceRiver(x: number, y: number): boolean {
+    if (!this.debugCanPlaceGround(x, y)) return false;
+    const c = this.grid.cell(x, y);
+    c.river = true;
+    c.tree = false;
+    return true;
+  }
+
+  debugPlaceTree(kind: TreeKind, x: number, y: number): boolean {
+    if (!this.debugCanPlaceGround(x, y)) return false;
+    const c = this.grid.cell(x, y);
+    if (c.river) return false;
+    c.tree = kind;
+    return true;
+  }
+
+  private debugRemoveBuilding(b: Building): void {
+    for (let i = this.cars.length - 1; i >= 0; i--) {
+      const car = this.cars[i];
+      if (car.homeId === b.id || car.bizId === b.id) this.destroyCar(car);
+    }
+    const i = this.buildings.indexOf(b);
+    if (i >= 0) this.buildings.splice(i, 1);
+    this.grid.cell(b.x, b.y).building = null;
   }
 
   // ------------------------------------------------------------------
@@ -879,14 +926,15 @@ export class Simulation {
   serialize(): SaveData {
     const pieces: SaveData["pieces"] = [];
     const river: { x: number; y: number }[] = [];
-    const trees: { x: number; y: number }[] = [];
+    const trees: { x: number; y: number; k: TreeKind }[] = [];
     for (let x = 0; x < this.grid.size; x++) {
       for (let y = 0; y < this.grid.size; y++) {
         for (const p of this.grid.cell(x, y).pieces) {
           pieces.push({ x, y, l: p.level, r: p.ramp, c: p.cost, m: p.mainAxis, k: p.kind });
         }
         if (this.grid.cell(x, y).river) river.push({ x, y });
-        if (this.grid.cell(x, y).tree) trees.push({ x, y });
+        const tree = this.grid.cell(x, y).tree;
+        if (tree) trees.push({ x, y, k: tree === true ? "pine" : tree });
       }
     }
     return {
@@ -919,7 +967,7 @@ export class Simulation {
         const idx = x * size + y;
         const c = this.grid.cell(x, y);
         if (c.river) m.river.push(idx);
-        if (c.tree) m.trees.push(idx);
+        if (c.tree) m.trees.push({ cell: idx, kind: c.tree === true ? "pine" : c.tree });
         for (const p of c.pieces)
           m.pieces.push({
             cell: idx,
@@ -943,7 +991,11 @@ export class Simulation {
     const s = new Simulation(false);
     const size = s.grid.size;
     for (const idx of m.river) s.grid.cell(Math.floor(idx / size), idx % size).river = true;
-    for (const idx of m.trees) s.grid.cell(Math.floor(idx / size), idx % size).tree = true;
+    for (const tree of m.trees) {
+      const idx = typeof tree === "number" ? tree : tree.cell;
+      const kind = typeof tree === "number" ? "pine" : tree.kind;
+      s.grid.cell(Math.floor(idx / size), idx % size).tree = kind;
+    }
     for (const p of m.pieces) {
       s.grid.addPiece(Math.floor(p.cell / size), p.cell % size, {
         level: p.level,
@@ -968,7 +1020,7 @@ export class Simulation {
         s.grid.cell(r.x, r.y).river = true;
       }
       for (const a of d.trees ?? []) {
-        s.grid.cell(a.x, a.y).tree = true;
+        s.grid.cell(a.x, a.y).tree = a.k ?? "pine";
       }
       for (const p of d.pieces) {
         s.grid.addPiece(p.x, p.y, {

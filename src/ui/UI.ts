@@ -312,13 +312,35 @@ export class UI {
 
     const line1 = document.createElement("div");
     line1.className = "debug-line";
+    const bHouse = this.btn("debugHouse", "debugHouseTip", () =>
+      this.game.input.setTool("debugHouse"),
+    );
+    const bBiz = this.btn("debugBiz", "debugBizTip", () => this.game.input.setTool("debugBiz"));
+    const bRiver = this.btn("debugRiver", "debugRiverTip", () =>
+      this.game.input.setTool("debugRiver"),
+    );
+    this.toolButtons.set("debugHouse", bHouse);
+    this.toolButtons.set("debugBiz", bBiz);
+    this.toolButtons.set("debugRiver", bRiver);
     line1.append(
-      this.btn("debugHouse", "debugHouseTip", () =>
-        this.game.debugSpawnBuilding("house", this.debugColor),
-      ),
-      this.btn("debugBiz", "debugBizTip", () =>
-        this.game.debugSpawnBuilding("biz", this.debugColor),
-      ),
+      bHouse,
+      bBiz,
+      bRiver,
+    );
+
+    const lineTrees = document.createElement("div");
+    lineTrees.className = "debug-line";
+    const bTreePine = this.btn("debugTreePine", "debugTreePineTip", () =>
+      this.game.input.setTool("debugTreePine"),
+    );
+    const bTreeLeafy = this.btn("debugTreeLeafy", "debugTreeLeafyTip", () =>
+      this.game.input.setTool("debugTreeLeafy"),
+    );
+    this.toolButtons.set("debugTreePine", bTreePine);
+    this.toolButtons.set("debugTreeLeafy", bTreeLeafy);
+    lineTrees.append(
+      bTreePine,
+      bTreeLeafy,
       this.btn("debugBike", "debugBikeTip", () => this.game.debugSpawnBike()),
     );
 
@@ -340,7 +362,7 @@ export class UI {
       bMoney,
     );
 
-    debugButtons.append(line1, line2);
+    debugButtons.append(line1, lineTrees, line2);
     this.debugPanel.appendChild(debugButtons);
     this.buildDebugStats();
     this.buildConfigSection();
@@ -703,6 +725,14 @@ export class UI {
     this.refreshOptionsLabels();
     this.refreshTools();
     this.refreshCfgRows();
+  }
+
+  getDebugColor(): number {
+    return this.debugColor;
+  }
+
+  isDebugOpen(): boolean {
+    return !this.debugPanel.classList.contains("hidden");
   }
 
   refreshTools(): void {

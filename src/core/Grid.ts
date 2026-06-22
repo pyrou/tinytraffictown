@@ -1,12 +1,12 @@
 import { Config } from "../Config";
-import type { Building, Dir, RoadKind, RoadPiece } from "./types";
+import type { Building, Dir, RoadKind, RoadPiece, TreeKind } from "./types";
 import { DX, DY, opp } from "./types";
 
 export interface Cell {
   pieces: RoadPiece[]; // triées par niveau croissant
   building: Building | null;
   river: boolean; // case d'eau : seul un pont (niveau >= RIVER_BRIDGE_LEVEL) est permis
-  tree: boolean; // arbre décoratif : détruit par toute construction, ne repousse pas
+  tree: TreeKind | boolean; // arbre décoratif : true = ancienne sauvegarde
 }
 
 export class Grid {

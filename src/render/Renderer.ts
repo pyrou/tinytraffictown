@@ -1,5 +1,5 @@
 import { Config } from "../Config";
-import type { Dir, RoadPiece, Building } from "../core/types";
+import type { Building, Dir, RoadPiece, TreeKind } from "../core/types";
 import { DX, DY, opp } from "../core/types";
 import type { Game } from "../Game";
 import type { Simulation } from "../sim/Simulation";
@@ -205,8 +205,12 @@ export class Renderer {
             draw: () => this.drawBuilding(cx, cy, b),
           });
         }
-        if (cell.tree) {
-          drawables.push({ key: base + 0.5, draw: () => this.drawTree(cx, cy, x, y) });
+        const tree = cell.tree;
+        if (tree) {
+          drawables.push({
+            key: base + 0.5,
+            draw: () => this.drawTree(cx, cy, x, y, tree),
+          });
         }
       }
     }
@@ -808,11 +812,18 @@ export class Renderer {
 
   // ---- arbres ----
 
-  // Arbre procédural : sapin ou feuillu selon un hachage de la cellule.
+  // Arbre procédural : type explicite, avec fallback haché pour anciennes saves.
   // Hauteur maintenue sous Z_STEP*2 pour passer sous les ponts de niveau 2.
-  private drawTree(cx: number, cy: number, gx: number, gy: number): void {
+  private drawTree(
+    cx: number,
+    cy: number,
+    gx: number,
+    gy: number,
+    kind: TreeKind | true,
+  ): void {
     const g = this.ctx;
     const h = (gx * 9241 + gy * 5407 + 77) % 91;
+    const treeKind: TreeKind = kind === true ? (h % 2 === 0 ? "pine" : "leafy") : kind;
     // ombre portée
     g.fillStyle = "rgba(0,0,0,0.18)";
     g.beginPath();
@@ -821,7 +832,7 @@ export class Renderer {
     // tronc
     g.fillStyle = "#6b4a2b";
     g.fillRect(cx - 1, cy - 3, 2, 4);
-    if (h % 2 === 0) {
+    if (treeKind === "pine") {
       // sapin : trois étages de triangles
       const greens = ["#2f6b33", "#3a7c3c", "#2a5f2e"];
       for (let i = 0; i < 3; i++) {
@@ -895,13 +906,26 @@ export class Renderer {
     let raise = [0, 0, 0, 0];
     let lvl = level;
     if (tool === "bulldoze") {
-      ok = game.sim.grid.topPiece(x, y) !== null || game.sim.grid.cell(x, y).tree;
+      const cell = game.sim.grid.cell(x, y);
+      ok =
+        game.sim.grid.topPiece(x, y) !== null ||
+        !!cell.tree ||
+        (game.ui.isDebugOpen() && (cell.building !== null || cell.river));
       const top = game.sim.grid.topPiece(x, y);
       lvl = top ? top.level : 0;
       if (top && top.ramp !== null) {
         const rd = this.rotDir(top.ramp);
         for (const ci of EDGE_CORNERS[rd]) raise[ci] = 1;
       }
+    } else if (tool === "debugHouse" || tool === "debugBiz") {
+      ok = game.sim.debugCanPlaceBuilding(x, y);
+      lvl = 0;
+    } else if (tool === "debugRiver") {
+      ok = game.sim.debugCanPlaceGround(x, y);
+      lvl = 0;
+    } else if (tool === "debugTreePine" || tool === "debugTreeLeafy") {
+      ok = game.sim.debugCanPlaceGround(x, y) && !game.sim.grid.cell(x, y).river;
+      lvl = 0;
     } else {
       ok =
         game.sim.grid.canPlace(x, y, level, ramp, kind) &&

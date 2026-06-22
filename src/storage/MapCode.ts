@@ -7,22 +7,22 @@
 //   8   version du format (rejetée au chargement si > MAP_VERSION)
 //   8   taille de grille (doit correspondre à celle du jeu)
 //   10  nb cases de rivière   puis 10 bits/case (index = x*size + y)
-//   10  nb arbres             puis 10 bits/case
+//   10  nb arbres             puis 10 bits/case [+ 1 type (v4+) : 1 = feuillu]
 //   12  nb segments de route  puis 16/17/18 bits/segment : 10 case + 3 niveau +
 //       3 rampe (4 = plat) [+ 1 axe prioritaire (v2+)] [+ 1 type (v3+) :
 //       1 = speedway]
 //   10  nb bâtiments          puis 14 bits/bâtiment : 10 case + 3 couleur + 1 type (1 = maison)
 
-import type { BuildingType, Dir, RoadKind } from "../core/types";
+import type { BuildingType, Dir, RoadKind, TreeKind } from "../core/types";
 
 // Version courante du format de partage. À incrémenter à chaque évolution ;
 // le jeu ouvre toute carte de version <= MAP_VERSION.
-export const MAP_VERSION = 3;
+export const MAP_VERSION = 4;
 
 export interface MapData {
   size: number;
   river: number[]; // index de cases
-  trees: number[];
+  trees: ({ cell: number; kind: TreeKind } | number)[];
   pieces: {
     cell: number;
     level: number;
@@ -97,7 +97,12 @@ export function encodeMap(m: MapData): string {
   w.write(m.river.length, 10);
   for (const c of m.river) w.write(c, 10);
   w.write(m.trees.length, 10);
-  for (const c of m.trees) w.write(c, 10);
+  for (const tree of m.trees) {
+    const cell = typeof tree === "number" ? tree : tree.cell;
+    const kind = typeof tree === "number" ? "pine" : tree.kind;
+    w.write(cell, 10);
+    w.write(kind === "leafy" ? 1 : 0, 1);
+  }
   w.write(m.pieces.length, 12);
   for (const p of m.pieces) {
     w.write(p.cell, 10);
@@ -132,7 +137,11 @@ export function decodeMap(code: string): MapData | "badVersion" | null {
     const nRiver = r.read(10);
     for (let i = 0; i < nRiver; i++) m.river.push(readCell());
     const nTrees = r.read(10);
-    for (let i = 0; i < nTrees; i++) m.trees.push(readCell());
+    for (let i = 0; i < nTrees; i++) {
+      const cell = readCell();
+      const kind: TreeKind = version >= 4 && r.read(1) === 1 ? "leafy" : "pine";
+      m.trees.push({ cell, kind });
+    }
     const nPieces = r.read(12);
     for (let i = 0; i < nPieces; i++) {
       const cell = readCell();
